@@ -604,7 +604,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                             "rounded-xl border bg-zinc-900/40 p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 cursor-pointer group/row relative overflow-hidden",
                                                             priorityColor
                                                         )}>
-                                                        {/* Priority Label Top-Left */}
+                                                        {/* Priority Label in Top-Left Corner */}
                                                         <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter bg-zinc-800/80 rounded-br-lg shadow-sm z-10", priorityTextColor)}>
                                                             {priorityText}
                                                         </div>
@@ -694,6 +694,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                             <div className="font-bold text-sm text-red-200 truncate">{item.name}</div>
                                                             <div className="text-[12.5px] text-red-400/90 mt-0.5 font-medium">{item.reason}</div>
                                                         </div>
+                                                        {/* Espaciador para centrado perfecto */}
                                                         <div className="w-5 h-5 shrink-0" />
                                                     </div>
                                                 );
@@ -746,12 +747,12 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                             <div className={cn("font-bold text-sm truncate", item.severity === 'expiry' ? "text-purple-200" : "text-blue-200")}>
                                                                 {item.name}
                                                             </div>
-                                                            <div className={cn("text-[12.5px] font-medium opacity-90 mt-0.5", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
+                                                            <div className={cn("text-[12px] font-medium mt-0.5 opacity-80", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
                                                                 {item.reason}
                                                             </div>
                                                         </div>
 
-                                                        {/* Espaciador equilibrado (icono w-7 + gap-2 + botón w-11 ≈ 80px) */}
+                                                        {/* Espaciador para equilibrar la izquierda (icono w-7 + gap-2 + botón w-11 = ~80px) */}
                                                         <div className="w-[80px] shrink-0" />
                                                     </div>
                                                 );
