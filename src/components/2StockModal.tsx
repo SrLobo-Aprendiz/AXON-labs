@@ -596,7 +596,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 return (
                                                     <div key={item.product_id} onClick={() => setSelectedProduct(item)}
                                                         className={cn(
-                                                            "rounded-xl border bg-zinc-900/40 p-3 flex items-center gap-2 transition-all hover:bg-zinc-900/60 cursor-pointer group/row relative overflow-hidden",
+                                                            "rounded-xl border bg-zinc-900/40 p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 cursor-pointer group/row relative overflow-hidden",
                                                             priorityColor
                                                         )}>
                                                         {/* Priority Label in Top-Right Corner */}
@@ -604,21 +604,26 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                             {priorityText}
                                                         </div>
 
-                                                        {/* Cart Button */}
-                                                        <Button
-                                                            variant="ghost"
-                                                            className="h-8 w-9 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleAddToShoppingList(item);
-                                                            }}
-                                                        >
-                                                            <Plus className="w-3 h-3" strokeWidth={3} />
-                                                            <ShoppingCart className="w-3.5 h-3.5" />
-                                                        </Button>
+                                                        {/* Icon Group (Class + Add) */}
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center bg-zinc-800/60", catConf.color)}>
+                                                                <Icon className="w-3.5 h-3.5" />
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 w-11 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5 relative overflow-hidden group/cart"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAddToShoppingList(item);
+                                                                }}
+                                                            >
+                                                                <Plus className="w-3 h-3" strokeWidth={3} />
+                                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                            </Button>
+                                                        </div>
 
                                                         {/* Main Content (Name + Metadata) */}
-                                                        <div className="flex-1 min-w-0 pr-2">
+                                                        <div className="flex-1 min-w-0 pr-4">
                                                             <div className="font-bold text-[14px] text-zinc-100 leading-tight mb-1 truncate">
                                                                 {item.name}
                                                             </div>
@@ -634,7 +639,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                         </div>
 
                                                         {/* Right Side Info (Quantity) */}
-                                                        <div className="shrink-0 flex items-center gap-1.5">
+                                                        <div className="shrink-0 flex items-center gap-2 mr-1">
                                                             <div className="flex flex-col items-end">
                                                                 <div className={cn(
                                                                     "font-mono font-bold text-[15px] px-2 py-0.5 rounded-md",
@@ -737,8 +742,8 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                         </div>
                                                     </div>
 
-                                                    {/* Espaciador para equilibrar la izquierda */}
-                                                    <div className="w-9 shrink-0" />
+                                                    {/* Espaciador para equilibrar la izquierda (~64px) */}
+                                                    <div className="w-[64px] shrink-0" />
                                                 </div>
                                             ))}
                                         </TabsContent>
