@@ -587,27 +587,32 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                             {sortedAndFilteredProducts.map(item => {
                                                 const catConf = CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG] || CATEGORY_CONFIG.Pantry;
                                                 const Icon = catConf.icon;
-                                                const priorityColor = item.importance_level === 'critical' ? "border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.1)]" :
-                                                    item.importance_level === 'high' ? "border-orange-500/50 shadow-[0_0_8px_rgba(249,115,22,0.1)]" :
-                                                        "border-blue-500/50 shadow-[0_0_8px_rgba(59,130,246,0.1)]";
-                                                const priorityText = item.importance_level === 'critical' ? 'VITAL' : item.importance_level === 'high' ? 'ALTA' : 'NORM.';
-                                                const priorityTextColor = item.importance_level === 'critical' ? "text-red-400" : item.importance_level === 'high' ? "text-orange-400" : "text-blue-400";
+                                                const priorityColor = item.is_ghost ? "border-zinc-600/40 shadow-none" :
+                                                    item.importance_level === 'critical' ? "border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.1)]" :
+                                                        item.importance_level === 'high' ? "border-orange-500/50 shadow-[0_0_8px_rgba(249,115,22,0.1)]" :
+                                                            "border-blue-500/50 shadow-[0_0_8px_rgba(59,130,246,0.1)]";
+                                                const priorityText = item.is_ghost ? 'PUNTUAL' :
+                                                    item.importance_level === 'critical' ? 'VITAL' :
+                                                        item.importance_level === 'high' ? 'ALTA' : 'NORM.';
+                                                const priorityTextColor = item.is_ghost ? "text-zinc-500" :
+                                                    item.importance_level === 'critical' ? "text-red-400" :
+                                                        item.importance_level === 'high' ? "text-orange-400" : "text-blue-400";
 
                                                 return (
                                                     <div key={item.product_id} onClick={() => setSelectedProduct(item)}
                                                         className={cn(
-                                                            "rounded-xl border bg-zinc-900/40 p-3 flex items-center gap-2 transition-all hover:bg-zinc-900/60 cursor-pointer group/row relative overflow-hidden",
+                                                            "rounded-xl border bg-zinc-900/40 p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 cursor-pointer group/row relative overflow-hidden",
                                                             priorityColor
                                                         )}>
-                                                        {/* Priority Label in Top-Right Corner */}
-                                                        <div className={cn("absolute top-0 right-0 px-2 py-0.5 text-[9px] font-black tracking-tighter bg-zinc-800/80 rounded-bl-lg shadow-sm z-10", priorityTextColor)}>
+                                                        {/* Priority Label Top-Left */}
+                                                        <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter bg-zinc-800/80 rounded-br-lg shadow-sm z-10", priorityTextColor)}>
                                                             {priorityText}
                                                         </div>
 
                                                         {/* Cart Button */}
                                                         <Button
                                                             variant="ghost"
-                                                            className="h-8 w-9 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
+                                                            className="h-8 w-11 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleAddToShoppingList(item);
@@ -618,7 +623,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                         </Button>
 
                                                         {/* Main Content (Name + Metadata) */}
-                                                        <div className="flex-1 min-w-0 pr-2">
+                                                        <div className="flex-1 min-w-0 pr-4">
                                                             <div className="font-bold text-[14px] text-zinc-100 leading-tight mb-1 truncate">
                                                                 {item.name}
                                                             </div>
@@ -634,7 +639,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                         </div>
 
                                                         {/* Right Side Info (Quantity) */}
-                                                        <div className="shrink-0 flex items-center gap-1.5">
+                                                        <div className="shrink-0 flex items-center">
                                                             <div className="flex flex-col items-end">
                                                                 <div className={cn(
                                                                     "font-mono font-bold text-[15px] px-2 py-0.5 rounded-md",
@@ -652,7 +657,6 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                                     </div>
                                                                 )}
                                                             </div>
-                                                            <ChevronRight className="w-3.5 h-3.5 text-zinc-700 opacity-50 transition-transform group-hover/row:translate-x-0.5" />
                                                         </div>
                                                     </div>
                                                 );
@@ -677,70 +681,81 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                     <div className="space-y-4 pb-10">
                                         <TabsContent value="critical" className="mt-0 space-y-2 data-[state=inactive]:hidden">
                                             {criticalAlerts.length === 0 && <div className="flex flex-col items-center justify-center h-40 text-zinc-500 gap-2"><CheckCircle2 className="w-8 h-8 opacity-50 text-green-500" /><span className="text-xs">Todo en orden por aquí.</span></div>}
-                                            {criticalAlerts.map(item => (
-                                                <div key={item.product_id} className="bg-red-900/10 border border-red-500/30 rounded-xl p-3.5 flex items-center gap-3 relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 px-2 py-0.5 text-[8px] font-black tracking-widest bg-red-500/20 text-red-400 rounded-bl-lg">
-                                                        VITAL
+                                            {criticalAlerts.map(item => {
+                                                const critLabel = item.importance_level === 'critical' ? 'VITAL' : item.importance_level === 'high' ? 'ALTA' : 'NORM.';
+                                                const critLabelColor = item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" : item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
+                                                return (
+                                                    <div key={item.product_id} className="bg-red-900/10 border border-red-500/30 rounded-xl p-3.5 flex items-center gap-3 relative overflow-hidden">
+                                                        <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black tracking-widest rounded-br-lg", critLabelColor)}>
+                                                            {critLabel}
+                                                        </div>
+                                                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                                                        <div className="flex-1 text-center min-w-0 px-4">
+                                                            <div className="font-bold text-sm text-red-200 truncate">{item.name}</div>
+                                                            <div className="text-[12.5px] text-red-400/90 mt-0.5 font-medium">{item.reason}</div>
+                                                        </div>
+                                                        <div className="w-5 h-5 shrink-0" />
                                                     </div>
-                                                    <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-                                                    <div className="flex-1 text-center min-w-0 px-4">
-                                                        <div className="font-bold text-sm text-red-200 truncate">{item.name}</div>
-                                                        <div className="text-[12.5px] text-red-400/90 mt-0.5 font-medium">{item.reason}</div>
-                                                    </div>
-                                                    {/* Espaciador para centrado perfecto */}
-                                                    <div className="w-5 h-5 shrink-0" />
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </TabsContent>
                                         <TabsContent value="suggestions" className="mt-0 space-y-2 data-[state=inactive]:hidden">
                                             {suggestionAlerts.length === 0 && <div className="flex flex-col items-center justify-center h-40 text-zinc-500 gap-2"><span className="text-xs">Sin sugerencias.</span></div>}
-                                            {suggestionAlerts.map(item => (
-                                                <div key={item.product_id} className={cn(
-                                                    "bg-zinc-900/40 border rounded-xl p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 relative overflow-hidden",
-                                                    item.severity === 'expiry' ? "border-purple-500/30" : "border-blue-500/30"
-                                                )}>
-                                                    {/* Priority Label */}
-                                                    <div className={cn(
-                                                        "absolute top-0 right-0 px-2 py-0.5 text-[9px] font-black tracking-tighter rounded-bl-lg",
-                                                        item.severity === 'expiry' ? "bg-purple-500/20 text-purple-400" : "bg-blue-500/20 text-blue-400"
+                                            {suggestionAlerts.map(item => {
+                                                const suggLabel = item.is_ghost ? 'PUNTUAL' :
+                                                    item.importance_level === 'critical' ? 'VITAL' :
+                                                        item.importance_level === 'high' ? 'ALTA' : 'NORM.';
+                                                const suggLabelColor = item.is_ghost ? "bg-zinc-700/40 text-zinc-500" :
+                                                    item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" :
+                                                        item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
+                                                return (
+                                                    <div key={item.product_id} className={cn(
+                                                        "bg-zinc-900/40 border rounded-xl p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 relative overflow-hidden",
+                                                        item.severity === 'expiry' ? "border-purple-500/30" : "border-blue-500/30"
                                                     )}>
-                                                        {item.severity === 'expiry' ? 'CADUC.' : 'OPC.'}
-                                                    </div>
-                                                    {/* Icon Group (Indicator + Add) */}
-                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        {/* Priority Label top-left */}
                                                         <div className={cn(
-                                                            "w-7 h-7 rounded-lg flex items-center justify-center",
-                                                            item.severity === 'expiry' ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"
+                                                            "absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter rounded-br-lg",
+                                                            suggLabelColor
                                                         )}>
-                                                            {item.severity === 'expiry' ? <Skull className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                                                            {suggLabel}
                                                         </div>
-                                                        <Button
-                                                            variant="ghost"
-                                                            className="h-8 w-11 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleAddToShoppingList(item);
-                                                            }}
-                                                        >
-                                                            <Plus className="w-3 h-3" strokeWidth={3} />
-                                                            <ShoppingCart className="w-3.5 h-3.5" />
-                                                        </Button>
-                                                    </div>
+                                                        {/* Icon Group (Indicator + Add) */}
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <div className={cn(
+                                                                "w-7 h-7 rounded-lg flex items-center justify-center",
+                                                                item.severity === 'expiry' ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"
+                                                            )}>
+                                                                {item.severity === 'expiry' ? <Skull className="w-4 h-4" /> : <Info className="w-4 h-4" />}
+                                                            </div>
+                                                            <Button
+                                                                variant="ghost"
+                                                                className="h-8 w-11 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleAddToShoppingList(item);
+                                                                }}
+                                                            >
+                                                                <Plus className="w-3 h-3" strokeWidth={3} />
+                                                                <ShoppingCart className="w-3.5 h-3.5" />
+                                                            </Button>
+                                                        </div>
 
-                                                    {/* Centered Name / Reason */}
-                                                    <div className="flex-1 text-center min-w-0 px-2">
-                                                        <div className={cn("font-bold text-sm truncate", item.severity === 'expiry' ? "text-purple-200" : "text-blue-200")}>
-                                                            {item.name}
+                                                        {/* Name + reason as subtitle */}
+                                                        <div className="flex-1 text-center min-w-0 px-2">
+                                                            <div className={cn("font-bold text-sm truncate", item.severity === 'expiry' ? "text-purple-200" : "text-blue-200")}>
+                                                                {item.name}
+                                                            </div>
+                                                            <div className={cn("text-[12.5px] font-medium opacity-90 mt-0.5", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
+                                                                {item.reason}
+                                                            </div>
                                                         </div>
-                                                        <div className={cn("text-[12.5px] font-medium opacity-90 mt-0.5", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
-                                                            {item.reason}
-                                                        </div>
-                                                    </div>
 
-                                                    {/* Espaciador para equilibrar la izquierda */}
-                                                    <div className="w-9 shrink-0" />
-                                                </div>
-                                            ))}
+                                                        {/* Espaciador equilibrado (icono w-7 + gap-2 + botón w-11 ≈ 80px) */}
+                                                        <div className="w-[80px] shrink-0" />
+                                                    </div>
+                                                );
+                                            })}
                                         </TabsContent>
                                     </div>
                                 </ScrollArea>

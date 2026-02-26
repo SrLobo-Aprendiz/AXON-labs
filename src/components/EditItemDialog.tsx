@@ -52,11 +52,11 @@ const EditItemDialog: React.FC<EditItemDialogProps> = ({ item, open, onOpenChang
       setCategory(item.category || '');
       setQuantity(item.quantity || 1);
       setExpiryDate(safeDate(item.expiry_date));
-      
+
       // Map status safely
       const currentStatus = item.status;
-      const validStatus = (currentStatus === 'stocked' || currentStatus === 'low' || currentStatus === 'panic') 
-        ? currentStatus 
+      const validStatus = (currentStatus === 'stocked' || currentStatus === 'low' || currentStatus === 'panic')
+        ? currentStatus
         : 'stocked';
       setStatus(validStatus);
     }
@@ -108,7 +108,7 @@ const EditItemDialog: React.FC<EditItemDialogProps> = ({ item, open, onOpenChang
     try {
       const { error } = await supabase.from('fridge_items').delete().eq('id', item.id);
       if (error) throw error;
-      
+
       toast({ title: 'Eliminado', description: 'Artículo eliminado de la nevera.' });
       onUpdate();
       onOpenChange(false);
@@ -136,11 +136,11 @@ const EditItemDialog: React.FC<EditItemDialogProps> = ({ item, open, onOpenChang
               <Label htmlFor="edit-name" className="text-zinc-500 text-[10px] uppercase font-bold">
                 Nombre
               </Label>
-              <Input 
-                id="edit-name" 
+              <Input
+                id="edit-name"
                 ref={nameRef}
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 disabled={isSubmitting}
                 className="bg-zinc-900 border-zinc-700"
               />
@@ -207,12 +207,12 @@ const EditItemDialog: React.FC<EditItemDialogProps> = ({ item, open, onOpenChang
                 <Label htmlFor="edit-quantity" className="text-zinc-500 text-[10px] uppercase font-bold">
                   Cantidad
                 </Label>
-                <Input 
-                  id="edit-quantity" 
-                  type="number" 
-                  min={1} 
-                  value={quantity} 
-                  onChange={(e) => setQuantity(parseInt(e.target.value))} 
+                <Input
+                  id="edit-quantity"
+                  type="number"
+                  min={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(parseInt(e.target.value))}
                   disabled={isSubmitting}
                   className="bg-zinc-900 border-zinc-700"
                 />
@@ -221,8 +221,8 @@ const EditItemDialog: React.FC<EditItemDialogProps> = ({ item, open, onOpenChang
                 <Label className="text-zinc-500 text-[10px] uppercase font-bold">Caducidad</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className={cn(
                         'justify-start text-left font-normal bg-zinc-900 border-zinc-700 text-xs',
                         !expiryDate && 'text-zinc-500'
@@ -261,9 +261,9 @@ const EditItemDialog: React.FC<EditItemDialogProps> = ({ item, open, onOpenChang
               Eliminar
             </Button>
             <div className="flex gap-2">
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => onOpenChange(false)}
                 disabled={isSubmitting}
               >
