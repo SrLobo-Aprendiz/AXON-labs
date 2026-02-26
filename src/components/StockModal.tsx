@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import {
     Package, Search, AlertTriangle, ShoppingCart,
@@ -59,6 +59,13 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
     // Sorting State
     const [sortBy, setSortBy] = useState<'name' | 'expiry' | 'priority' | 'category'>('name');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+    // Swipe-to-add (touch + mouse)
+    const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({});
+    const [swipingId, setSwipingId] = useState<string | null>(null);
+    const touchStartX = useRef<Record<string, number>>({});
+    const isDragging = useRef<boolean>(false);
+    const SWIPE_THRESHOLD = 80;
 
     // Modales y Acciones
     const [consumeAmount, setConsumeAmount] = useState('');
@@ -597,61 +604,78 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 const priorityTextColor = item.is_ghost ? "text-zinc-500" :
                                                     item.importance_level === 'critical' ? "text-red-400" :
                                                         item.importance_level === 'high' ? "text-orange-400" : "text-blue-400";
+                                                const sid = item.product_id;
+                                                const offset = swipeOffsets[sid] || 0;
 
                                                 return (
-                                                    <div key={item.product_id} onClick={() => setSelectedProduct(item)}
-                                                        className={cn(
-                                                            "rounded-xl border bg-zinc-900/40 p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 cursor-pointer group/row relative overflow-hidden",
-                                                            priorityColor
+                                                    <div key={sid} className={cn("rounded-xl border relative overflow-hidden", priorityColor)}>
+                                                        {/* Swipe reveal */}
+                                                        <div className={cn(
+                                                            "absolute inset-0 flex items-center pl-4",
+                                                            offset >= SWIPE_THRESHOLD ? "bg-green-600/25" : "bg-blue-600/15"
                                                         )}>
-                                                        {/* Priority Label in Top-Left Corner */}
-                                                        <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter bg-zinc-800/80 rounded-br-lg shadow-sm z-10", priorityTextColor)}>
-                                                            {priorityText}
+                                                            <ShoppingCart className={cn("w-5 h-5 transition-all duration-150", offset >= SWIPE_THRESHOLD ? "text-green-400 scale-125" : "text-blue-400 opacity-60")} />
                                                         </div>
-
-                                                        {/* Cart Button */}
-                                                        <Button
-                                                            variant="ghost"
-                                                            className="h-8 w-11 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleAddToShoppingList(item);
+                                                        {/* Row */}
+                                                        <div
+                                                            className="bg-zinc-900/40 p-3 flex items-center gap-2 cursor-grab active:cursor-grabbing relative select-none"
+                                                            style={{ transform: `translateX(${offset}px)`, transition: swipingId === sid ? 'none' : 'transform 0.25s ease' }}
+                                                            onClick={() => { if (!isDragging.current) setSelectedProduct(item); }}
+                                                            onTouchStart={(e) => { touchStartX.current[sid] = e.touches[0].clientX; setSwipingId(sid); isDragging.current = false; }}
+                                                            onTouchMove={(e) => {
+                                                                const d = e.touches[0].clientX - (touchStartX.current[sid] || 0);
+                                                                if (d > 0) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
+                                                            }}
+                                                            onTouchEnd={() => {
+                                                                setSwipingId(null);
+                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
+                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                setTimeout(() => { isDragging.current = false; }, 100);
+                                                            }}
+                                                            onMouseDown={(e) => { touchStartX.current[sid] = e.clientX; setSwipingId(sid); isDragging.current = false; }}
+                                                            onMouseMove={(e) => {
+                                                                if (swipingId !== sid) return;
+                                                                const d = e.clientX - (touchStartX.current[sid] || 0);
+                                                                if (d > 5) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
+                                                            }}
+                                                            onMouseUp={() => {
+                                                                if (swipingId !== sid) return;
+                                                                setSwipingId(null);
+                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
+                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                setTimeout(() => { isDragging.current = false; }, 100);
+                                                            }}
+                                                            onMouseLeave={() => {
+                                                                if (swipingId !== sid) return;
+                                                                setSwipingId(null);
+                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                setTimeout(() => { isDragging.current = false; }, 100);
                                                             }}
                                                         >
-                                                            <Plus className="w-3 h-3" strokeWidth={3} />
-                                                            <ShoppingCart className="w-3.5 h-3.5" />
-                                                        </Button>
-
-                                                        {/* Main Content (Name + Metadata) */}
-                                                        <div className="flex-1 min-w-0 pr-4">
-                                                            <div className="font-bold text-[14px] text-zinc-100 leading-tight mb-1 truncate">
-                                                                {item.name}
+                                                            {/* Priority Label Top-Left */}
+                                                            <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter bg-zinc-800/80 rounded-br-lg shadow-sm z-10", priorityTextColor)}>
+                                                                {priorityText}
                                                             </div>
-                                                            <div className="flex items-center gap-3 text-[12.5px]">
-                                                                <div className="flex items-center gap-1.5 text-zinc-400 font-medium whitespace-nowrap">
-                                                                    <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                                                                    <span>{item.batches.length} {item.batches.length === 1 ? 'lote' : 'lotes'}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1 text-zinc-500 italic truncate opacity-80">
-                                                                    • {Object.keys(item.locations).join(', ')}
+                                                            {/* Name + Metadata */}
+                                                            <div className="flex-1 min-w-0 pr-2 pt-1">
+                                                                <div className="font-bold text-[14px] text-zinc-100 leading-tight mb-1 truncate">{item.name}</div>
+                                                                <div className="flex items-center gap-3 text-[12.5px]">
+                                                                    <div className="flex items-center gap-1.5 text-zinc-400 font-medium whitespace-nowrap">
+                                                                        <Layers className="w-3.5 h-3.5 text-zinc-500" />
+                                                                        <span>{item.batches.length} {item.batches.length === 1 ? 'lote' : 'lotes'}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1 text-zinc-500 italic truncate opacity-80">
+                                                                        • {Object.keys(item.locations).join(', ')}
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-
-                                                        {/* Right Side Info (Quantity) */}
-                                                        <div className="shrink-0 flex items-center">
-                                                            <div className="flex flex-col items-end">
-                                                                <div className={cn(
-                                                                    "font-mono font-bold text-[15px] px-2 py-0.5 rounded-md",
-                                                                    item.total_quantity === 0 ? "text-red-400 bg-red-400/10" : "text-zinc-100 bg-zinc-800/50"
-                                                                )}>
+                                                            {/* Quantity */}
+                                                            <div className="shrink-0 flex flex-col items-end">
+                                                                <div className={cn("font-mono font-bold text-[15px] px-2 py-0.5 rounded-md", item.total_quantity === 0 ? "text-red-400 bg-red-400/10" : "text-zinc-100 bg-zinc-800/50")}>
                                                                     {item.total_quantity} <span className="text-[10px] opacity-70 ml-0.5">{item.unit}</span>
                                                                 </div>
                                                                 {item.earliest_expiry && (
-                                                                    <div className={cn(
-                                                                        "flex items-center gap-1 text-[11px] font-medium mt-1.5",
-                                                                        differenceInDays(new Date(item.earliest_expiry), new Date()) < 7 ? "text-purple-400" : "text-emerald-500"
-                                                                    )}>
+                                                                    <div className={cn("flex items-center gap-1 text-[11px] font-medium mt-1.5", differenceInDays(new Date(item.earliest_expiry), new Date()) < 7 ? "text-purple-400" : "text-emerald-500")}>
                                                                         <AlertTriangle className="w-3 h-3" />
                                                                         {format(new Date(item.earliest_expiry), 'dd/MM/yy')}
                                                                     </div>
@@ -694,7 +718,6 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                             <div className="font-bold text-sm text-red-200 truncate">{item.name}</div>
                                                             <div className="text-[12.5px] text-red-400/90 mt-0.5 font-medium">{item.reason}</div>
                                                         </div>
-                                                        {/* Espaciador para centrado perfecto */}
                                                         <div className="w-5 h-5 shrink-0" />
                                                     </div>
                                                 );
@@ -709,51 +732,69 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 const suggLabelColor = item.is_ghost ? "bg-zinc-700/40 text-zinc-500" :
                                                     item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" :
                                                         item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
+                                                const sid = `sugg_${item.product_id}`;
+                                                const offset = swipeOffsets[sid] || 0;
                                                 return (
-                                                    <div key={item.product_id} className={cn(
-                                                        "bg-zinc-900/40 border rounded-xl p-3.5 flex items-center gap-3 transition-all hover:bg-zinc-900/60 relative overflow-hidden",
-                                                        item.severity === 'expiry' ? "border-purple-500/30" : "border-blue-500/30"
-                                                    )}>
-                                                        {/* Priority Label top-left */}
-                                                        <div className={cn(
-                                                            "absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter rounded-br-lg",
-                                                            suggLabelColor
-                                                        )}>
-                                                            {suggLabel}
+                                                    <div key={item.product_id} className={cn("rounded-xl border relative overflow-hidden", item.severity === 'expiry' ? "border-purple-500/30" : "border-blue-500/30")}>
+                                                        {/* Swipe reveal */}
+                                                        <div className={cn("absolute inset-0 flex items-center pl-4", offset >= SWIPE_THRESHOLD ? "bg-green-600/25" : "bg-blue-600/15")}>
+                                                            <ShoppingCart className={cn("w-5 h-5 transition-all duration-150", offset >= SWIPE_THRESHOLD ? "text-green-400 scale-125" : "text-blue-400 opacity-60")} />
                                                         </div>
-                                                        {/* Icon Group (Indicator + Add) */}
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <div className={cn(
-                                                                "w-7 h-7 rounded-lg flex items-center justify-center",
-                                                                item.severity === 'expiry' ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"
-                                                            )}>
+                                                        {/* Row */}
+                                                        <div
+                                                            className="bg-zinc-900/40 p-3.5 flex items-center gap-3 relative cursor-grab active:cursor-grabbing select-none"
+                                                            style={{ transform: `translateX(${offset}px)`, transition: swipingId === sid ? 'none' : 'transform 0.25s ease' }}
+                                                            onTouchStart={(e) => { touchStartX.current[sid] = e.touches[0].clientX; setSwipingId(sid); isDragging.current = false; }}
+                                                            onTouchMove={(e) => {
+                                                                const d = e.touches[0].clientX - (touchStartX.current[sid] || 0);
+                                                                if (d > 0) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
+                                                            }}
+                                                            onTouchEnd={() => {
+                                                                setSwipingId(null);
+                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
+                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                setTimeout(() => { isDragging.current = false; }, 100);
+                                                            }}
+                                                            onMouseDown={(e) => { touchStartX.current[sid] = e.clientX; setSwipingId(sid); isDragging.current = false; }}
+                                                            onMouseMove={(e) => {
+                                                                if (swipingId !== sid) return;
+                                                                const d = e.clientX - (touchStartX.current[sid] || 0);
+                                                                if (d > 5) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
+                                                            }}
+                                                            onMouseUp={() => {
+                                                                if (swipingId !== sid) return;
+                                                                setSwipingId(null);
+                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
+                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                setTimeout(() => { isDragging.current = false; }, 100);
+                                                            }}
+                                                            onMouseLeave={() => {
+                                                                if (swipingId !== sid) return;
+                                                                setSwipingId(null);
+                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                setTimeout(() => { isDragging.current = false; }, 100);
+                                                            }}
+                                                        >
+                                                            {/* Priority Label top-left */}
+                                                            <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter rounded-br-lg", suggLabelColor)}>
+                                                                {suggLabel}
+                                                            </div>
+                                                            {/* Icon */}
+                                                            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", item.severity === 'expiry' ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400")}>
                                                                 {item.severity === 'expiry' ? <Skull className="w-4 h-4" /> : <Info className="w-4 h-4" />}
                                                             </div>
-                                                            <Button
-                                                                variant="ghost"
-                                                                className="h-8 w-11 px-0 shrink-0 text-zinc-400 hover:text-blue-400 hover:bg-blue-500/10 active:scale-95 transition-all duration-200 rounded-lg flex items-center justify-center gap-0.5"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleAddToShoppingList(item);
-                                                                }}
-                                                            >
-                                                                <Plus className="w-3 h-3" strokeWidth={3} />
-                                                                <ShoppingCart className="w-3.5 h-3.5" />
-                                                            </Button>
-                                                        </div>
-
-                                                        {/* Name + reason as subtitle */}
-                                                        <div className="flex-1 text-center min-w-0 px-2">
-                                                            <div className={cn("font-bold text-sm truncate", item.severity === 'expiry' ? "text-purple-200" : "text-blue-200")}>
-                                                                {item.name}
+                                                            {/* Name + reason subtitle */}
+                                                            <div className="flex-1 text-center min-w-0 px-2">
+                                                                <div className={cn("font-bold text-sm truncate", item.severity === 'expiry' ? "text-purple-200" : "text-blue-200")}>
+                                                                    {item.name}
+                                                                </div>
+                                                                <div className={cn("text-[12.5px] font-medium opacity-90 mt-0.5", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
+                                                                    {item.reason}
+                                                                </div>
                                                             </div>
-                                                            <div className={cn("text-[12px] font-medium mt-0.5 opacity-80", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
-                                                                {item.reason}
-                                                            </div>
+                                                            {/* Spacer to balance the left icon */}
+                                                            <div className="w-7 shrink-0" />
                                                         </div>
-
-                                                        {/* Espaciador para equilibrar la izquierda (icono w-7 + gap-2 + botón w-11 = ~80px) */}
-                                                        <div className="w-[80px] shrink-0" />
                                                     </div>
                                                 );
                                             })}
