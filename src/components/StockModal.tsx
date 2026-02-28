@@ -359,7 +359,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
 
     const handleAddToShoppingList = async (item: any) => {
         try {
-            await supabase.from('shopping_list').insert({
+            const { error } = await supabase.from('shopping_list').insert({
                 household_id: householdId,
                 item_name: item.name,
                 category: item.category,
@@ -368,9 +368,13 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                 quantity: 1,
                 is_manual: true
             });
+            
+            if (error) throw error; // <-- ESTE ES EL CHIVATO MÁGICO
+
             toast({ title: "Añadido", description: `${item.name} a la lista de compra.` });
-        } catch (e) {
-            toast({ title: "Error", variant: "destructive" });
+        } catch (e: any) {
+            // AHORA SÍ VEREMOS EL ERROR REAL EN ROJO
+            toast({ title: "Error al añadir", description: e.message, variant: "destructive" });
         }
     };
 

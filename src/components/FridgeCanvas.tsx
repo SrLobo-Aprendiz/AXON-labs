@@ -76,14 +76,16 @@ export const FridgeCanvas: React.FC<FridgeCanvasProps> = ({ householdId }) => {
 
     const [inventoryRes, shoppingListRes, receptionRes] = await Promise.all([
       supabase.from('inventory_items').select('*, product:product_definitions(*)').eq('household_id', householdId),
-      supabase.from('shopping_list').select('id, item_name').eq('household_id', householdId).in('status', ['active', 'checked', 'postponed']), 
+      supabase.from('shopping_list').select('id, item_name, is_manual').eq('household_id', householdId).in('status', ['active', 'checked', 'postponed']), 
       supabase.from('shopping_list').select('item_name, quantity').eq('household_id', householdId).eq('status', 'bought')
     ]);
 
     const inventory = (inventoryRes.data || []) as InventoryItemWithProduct[];
     
-    const shoppingListMap = new Map<string, string>(); 
-    shoppingListRes.data?.forEach(i => shoppingListMap.set(i.item_name.trim().toLowerCase(), i.id));
+    const shoppingListMap = new Map<string, { id: string; is_manual: boolean }>(); 
+    shoppingListRes.data?.forEach((i: { id: string; item_name: string; is_manual?: boolean }) => 
+      shoppingListMap.set(i.item_name.trim().toLowerCase(), { id: i.id, is_manual: !!i.is_manual })
+    );
     
     const receptionMap = new Map<string, number>();
     receptionRes.data?.forEach(i => {
@@ -192,9 +194,10 @@ export const FridgeCanvas: React.FC<FridgeCanvasProps> = ({ householdId }) => {
           }, { onConflict: 'household_id, item_name', ignoreDuplicates: true } as any);
         }
       } 
-      // 2. LIMPIEZA
+      // 2. LIMPIEZA (no borrar ítems manuales)
       else if (realStock > stats.minQty && shoppingListMap.has(nameKey)) {
-          itemsToDeleteFromList.push(shoppingListMap.get(nameKey)!);
+          const entry = shoppingListMap.get(nameKey)!;
+          if (!entry.is_manual) itemsToDeleteFromList.push(entry.id);
       }
     }
 
