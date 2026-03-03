@@ -6,6 +6,7 @@ import { NEXT_PUBLIC_APP_NAME } from '@/lib/config';
 // Componentes
 import { FridgeCanvas } from '@/components/FridgeCanvas';
 import CreateFamilyDialog from '@/components/CreateFamilyDialog';
+import { AppSettingsDialog } from '@/components/AppSettingsDialog';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -19,14 +20,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { 
-  Heart, LogOut, Settings, Users, ChevronDown, UserPlus, 
-  Key, MessageCircle 
+import {
+  Heart, LogOut, Settings, Users, ChevronDown, UserPlus,
+  Key, MessageCircle
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { profile, currentHousehold, logout, isLoading, isAuthenticated } = useAuth();
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
   // Redirect to auth if not authenticated
   React.useEffect(() => {
@@ -51,11 +53,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      
+
       {/* --- HEADER: ZONA DE LLAVEROS Y PERFIL --- */}
       <header className="sticky top-0 z-40 border-b border-zinc-200 dark:border-zinc-800 bg-background/80 backdrop-blur-lg">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          
+
           {/* IZQUIERDA: LOGO Y HOGAR */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -74,12 +76,12 @@ const Dashboard: React.FC = () => {
 
           {/* DERECHA: COLGADORES DE LLAVEROS (Placeholder) + PERFIL */}
           <div className="flex items-center gap-4">
-            
+
             {/* ZONA DE LLAVEROS (Aquí irán los usuarios del hogar) */}
             <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-full px-3 py-1 gap-2 border border-zinc-200 dark:border-zinc-700">
-               {/* Placeholder visual para el futuro desarrollo de llaveros */}
-               <Key className="w-4 h-4 text-zinc-400" />
-               <span className="text-xs text-zinc-500 font-medium">Llaveros</span>
+              {/* Placeholder visual para el futuro desarrollo de llaveros */}
+              <Key className="w-4 h-4 text-zinc-400" />
+              <span className="text-xs text-zinc-500 font-medium">Llaveros</span>
             </div>
 
             {/* MENÚ DE USUARIO */}
@@ -97,7 +99,7 @@ const Dashboard: React.FC = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
                   <Settings className="w-4 h-4 mr-2" /> Configuración
                 </DropdownMenuItem>
                 <DropdownMenuItem>
@@ -117,7 +119,7 @@ const Dashboard: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         {currentHousehold ? (
           <div className="space-y-8 animate-in fade-in duration-500">
-            
+
             {/* LA NEVERA ES LA PROTAGONISTA */}
             {/* Sin títulos encima, sin botones flotantes externos. Todo limpio. */}
             <section className="relative group shadow-2xl rounded-2xl">
@@ -155,6 +157,7 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
+      <AppSettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </div>
   );
 };

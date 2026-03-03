@@ -9,16 +9,23 @@ export const StoreAutocomplete = ({
   value,
   onChange,
   householdId,
-  placeholder = "Tienda..."
+  placeholder = "Tienda...",
+  suggestions
 }: {
   value: string;
   onChange: (value: string) => void;
   householdId: string;
   placeholder?: string;
+  suggestions?: string[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [stores, setStores] = useState<string[]>([]);
+  const [stores, setStores] = useState<string[]>(suggestions || []);
   const [inputValue, setInputValue] = useState(value);
+
+  // Sincronizar sugerencias externas
+  useEffect(() => {
+    if (suggestions) setStores(suggestions);
+  }, [suggestions]);
 
   // Sincronizar valor externo
   useEffect(() => { setInputValue(value); }, [value]);
@@ -26,7 +33,7 @@ export const StoreAutocomplete = ({
   // Cargar tiendas previas (solo las que ya existen en TU historial)
   useEffect(() => {
     const fetchStores = async () => {
-      if (!householdId) return;
+      if (!householdId || (suggestions && suggestions.length > 0)) return;
       try {
         const { data } = await supabase.from('inventory_items')
           .select('store')
@@ -49,7 +56,7 @@ export const StoreAutocomplete = ({
       }
     };
     fetchStores();
-  }, [householdId]);
+  }, [householdId, suggestions]);
 
   const handleSelect = (store: string) => {
     setInputValue(store);

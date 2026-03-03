@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // Corregida ruta de importación
 import { LocationAutocomplete } from '@/components/LocationAutocomplete';
 import { StoreAutocomplete } from '@/components/StoreAutocomplete';
+import { usePerformanceSettings } from '@/hooks/usePerformanceSettings';
 
 interface ShoppingItem {
     id: string;
@@ -30,9 +31,18 @@ interface ReceptionRowProps {
     item: ShoppingItem;
     householdId: string;
     onReceive: () => void;
+    storeSuggestions?: string[];
+    locationSuggestions?: string[];
 }
 
-export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, onReceive }) => {
+export const ReceptionRow: React.FC<ReceptionRowProps> = ({
+    item,
+    householdId,
+    onReceive,
+    storeSuggestions = [],
+    locationSuggestions = []
+}) => {
+    const { useLowPerfUI } = usePerformanceSettings();
     const { toast } = useToast();
 
     // Estados básicos
@@ -197,12 +207,22 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                 {/* 1. Cantidad */}
                 <div className="flex gap-1">
                     <Input type="number" className="h-8 text-sm bg-zinc-950 border-zinc-700 text-center font-bold" value={qty} onChange={e => setQty(e.target.value)} />
-                    <Select value={unit} onValueChange={setUnit}>
-                        <SelectTrigger className="h-8 w-14 bg-zinc-950 border-zinc-700 px-1 text-[10px]"><SelectValue /></SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[80px]">
-                            {['uds', 'kg', 'g', 'L', 'ml'].map(u => <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    {useLowPerfUI ? (
+                        <select
+                            className="h-8 w-14 bg-zinc-950 border border-zinc-700 px-1 text-[10px] rounded text-white appearance-none"
+                            value={unit}
+                            onChange={(e) => setUnit(e.target.value)}
+                        >
+                            {['uds', 'kg', 'g', 'L', 'ml'].map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                    ) : (
+                        <Select value={unit} onValueChange={setUnit}>
+                            <SelectTrigger className="h-8 w-14 bg-zinc-950 border-zinc-700 px-1 text-[10px]"><SelectValue /></SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[80px]">
+                                {['uds', 'kg', 'g', 'L', 'ml'].map(u => <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
 
                 {/* 2. Precio Inteligente (SELECTOR) */}
@@ -214,15 +234,26 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                         value={priceInput}
                         onChange={e => setPriceInput(e.target.value)}
                     />
-                    <Select value={priceType} onValueChange={(v: any) => setPriceType(v)}>
-                        <SelectTrigger className="h-8 w-[70px] bg-zinc-950 border-zinc-700 px-1 text-[10px]">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[80px]">
-                            <SelectItem value="total" className="text-xs">€ Tot</SelectItem>
-                            <SelectItem value="unit" className="text-xs">€/ud</SelectItem>
-                        </SelectContent>
-                    </Select>
+                    {useLowPerfUI ? (
+                        <select
+                            className="h-8 w-[70px] bg-zinc-950 border border-zinc-700 px-1 text-[10px] rounded text-white appearance-none"
+                            value={priceType}
+                            onChange={(e) => setPriceType(e.target.value as any)}
+                        >
+                            <option value="total">€ Tot</option>
+                            <option value="unit">€/ud</option>
+                        </select>
+                    ) : (
+                        <Select value={priceType} onValueChange={(v: any) => setPriceType(v)}>
+                            <SelectTrigger className="h-8 w-[70px] bg-zinc-950 border-zinc-700 px-1 text-[10px]">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[80px]">
+                                <SelectItem value="total" className="text-xs">€ Tot</SelectItem>
+                                <SelectItem value="unit" className="text-xs">€/ud</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    )}
                 </div>
 
                 {/* 3. Tienda */}
@@ -231,6 +262,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                     onChange={setStore}
                     householdId={householdId}
                     placeholder="Tienda..."
+                    suggestions={storeSuggestions}
                 />
 
                 {/* 4. Ubicación */}
@@ -239,6 +271,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                     onChange={setLoc}
                     householdId={householdId}
                     placeholder="¿Dónde lo guardas?"
+                    suggestions={locationSuggestions}
                 />
             </div>
 

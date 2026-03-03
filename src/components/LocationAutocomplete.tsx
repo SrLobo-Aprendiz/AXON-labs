@@ -11,23 +11,31 @@ export const LocationAutocomplete = ({
   value,
   onChange,
   householdId,
-  placeholder = "Ubicación..."
+  placeholder = "Ubicación...",
+  suggestions
 }: {
   value: string;
   onChange: (value: string) => void;
   householdId: string;
   placeholder?: string;
+  suggestions?: string[];
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [locations, setLocations] = useState<string[]>(DEFAULT_LOCATIONS);
+  const [locations, setLocations] = useState<string[]>(suggestions || DEFAULT_LOCATIONS);
   const [inputValue, setInputValue] = useState(value);
 
   // Sincronización
   useEffect(() => { setInputValue(value); }, [value]);
 
   useEffect(() => {
+    if (suggestions) {
+      setLocations(suggestions.length > 0 ? suggestions : DEFAULT_LOCATIONS);
+    }
+  }, [suggestions]);
+
+  useEffect(() => {
     const fetchLocations = async () => {
-      if (!householdId) return;
+      if (!householdId || (suggestions && suggestions.length > 0)) return;
       try {
         const { data } = await supabase.from('inventory_items')
           .select('location')
@@ -46,7 +54,7 @@ export const LocationAutocomplete = ({
       } catch (e) { console.error(e); }
     };
     fetchLocations();
-  }, [householdId]);
+  }, [householdId, suggestions]);
 
   // Filtro visual
   const filteredLocations = locations.filter(loc =>

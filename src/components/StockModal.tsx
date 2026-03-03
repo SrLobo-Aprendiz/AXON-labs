@@ -25,6 +25,7 @@ import { EditProductDialog } from '@/components/stock/EditProductDialog';
 import AddItemDialog from './AddItemDialog';
 import AddBatchDialog from './AddBatchDialog';
 import { LocationAutocomplete } from './LocationAutocomplete';
+import { usePerformanceSettings } from '@/hooks/usePerformanceSettings';
 
 // Configuración
 import { CATEGORY_CONFIG, InventoryItem } from '@/lib/types';
@@ -142,6 +143,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
     const { toast } = useToast();
 
     // --- ESTADOS ---
+    const { useLowPerfUI, isMobile } = usePerformanceSettings();
     const [activeTab, setActiveTab] = useState('reception');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -151,6 +153,10 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
     const [rawInventoryItems, setRawInventoryItems] = useState<InventoryItem[]>([]);
     const [criticalAlerts, setCriticalAlerts] = useState<any[]>([]);
     const [suggestionAlerts, setSuggestionAlerts] = useState<any[]>([]);
+
+    // Sugerencias centralizadas para evitar redundancia en hijos
+    const [storeSuggestions, setStoreSuggestions] = useState<string[]>([]);
+    const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
 
     // UI States
     const [searchTerm, setSearchTerm] = useState('');
@@ -291,7 +297,17 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                 .eq('household_id', householdId)
                 .order('expiry_date', { ascending: true });
 
+            // Cargar sugerencias centralizadas
             if (inventoryData) {
+                const uniqueStores = new Set<string>();
+                const uniqueLocs = new Set<string>();
+                inventoryData.forEach((i: any) => {
+                    if (i.store?.trim()) uniqueStores.add(i.store.trim());
+                    if (i.location?.trim()) uniqueLocs.add(i.location.trim());
+                });
+                setStoreSuggestions(Array.from(uniqueStores).sort());
+                setLocationSuggestions(Array.from(uniqueLocs).sort());
+
                 setRawInventoryItems(inventoryData as InventoryItem[]);
                 processInventory(inventoryData);
             }
@@ -549,7 +565,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                             <Package className="w-5 h-5 text-blue-500" />
                             <span className="font-bold text-lg">Stock Casa</span>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 hover:bg-zinc-800 rounded-full"><X className="w-5 h-5" /></Button>
+                        <Button variant="ghost" size="icon" onClick={() => { if (typeof onClose === 'function') onClose(); }} className="h-8 w-8 hover:bg-zinc-800 rounded-full"><X className="w-5 h-5" /></Button>
                     </div>
 
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 w-full">
@@ -567,7 +583,18 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                 <ScrollArea className="flex-1 w-full p-4">
                                     {isLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div> :
                                         receptionItems.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-zinc-500 min-h-[300px]"><CheckCircle2 className="w-12 h-12 mb-3 opacity-20" /><p className="text-sm">Todo colocado.</p></div> :
-                                            <div className="space-y-1 pb-4">{receptionItems.map(item => (<ReceptionRow key={item.id} item={item} householdId={householdId} onReceive={fetchData} />))}</div>}
+                                            <div className="space-y-1 pb-4">
+                                                {receptionItems.map(item => (
+                                                    <ReceptionRow
+                                                        key={item.id}
+                                                        item={item}
+                                                        householdId={householdId}
+                                                        onReceive={fetchData}
+                                                        storeSuggestions={storeSuggestions}
+                                                        locationSuggestions={locationSuggestions}
+                                                    />
+                                                ))}
+                                            </div>}
                                 </ScrollArea>
                             )}
                         </TabsContent>
@@ -639,63 +666,125 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 <Input placeholder="Buscar producto..." className="pl-9 h-10 bg-zinc-950 border-zinc-800 text-sm focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                             </div>
                                             <div className="flex gap-1.5">
-                                                <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)} modal={false}>
-                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
-                                                        <SelectValue placeholder="Clase" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                        <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
-                                                        {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
-                                                            <SelectItem key={key} value={key} className="text-xs text-white">{conf.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <Select value={selectedLocation || "all"} onValueChange={(v) => setSelectedLocation(v === "all" ? null : v)} modal={false}>
-                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
-                                                        <SelectValue placeholder="Ubicación" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                        <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
-                                                        {allLocations.map(loc => (
-                                                            <SelectItem key={loc} value={loc} className="text-xs text-white">{loc}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <Select value={selectedPriority || "all"} onValueChange={(v) => setSelectedPriority(v === "all" ? null : v)} modal={false}>
-                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
-                                                        <SelectValue placeholder="Prioridad" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                        <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
-                                                        <SelectItem value="critical" className="text-xs text-white">Vital</SelectItem>
-                                                        <SelectItem value="high" className="text-xs text-white">Alta</SelectItem>
-                                                        <SelectItem value="normal" className="text-xs text-white">Normal</SelectItem>
-                                                        <SelectItem value="ghost" className="text-xs text-white">Puntuales</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                {useLowPerfUI ? (
+                                                    <>
+                                                        <select
+                                                            className="flex-1 h-8 bg-zinc-950 border border-zinc-800 text-[10px] font-bold px-2 rounded text-white appearance-none"
+                                                            value={selectedCategory || "all"}
+                                                            onChange={(e) => setSelectedCategory(e.target.value === "all" ? null : e.target.value)}
+                                                        >
+                                                            <option value="all">Clase: Todas</option>
+                                                            {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
+                                                                <option key={key} value={key}>{conf.label}</option>
+                                                            ))}
+                                                        </select>
+                                                        <select
+                                                            className="flex-1 h-8 bg-zinc-950 border border-zinc-800 text-[10px] font-bold px-2 rounded text-white appearance-none"
+                                                            value={selectedLocation || "all"}
+                                                            onChange={(e) => setSelectedLocation(e.target.value === "all" ? null : e.target.value)}
+                                                        >
+                                                            <option value="all">Ubicación: Todas</option>
+                                                            {allLocations.map(loc => (
+                                                                <option key={loc} value={loc}>{loc}</option>
+                                                            ))}
+                                                        </select>
+                                                        <select
+                                                            className="flex-1 h-8 bg-zinc-950 border border-zinc-800 text-[10px] font-bold px-2 rounded text-white appearance-none"
+                                                            value={selectedPriority || "all"}
+                                                            onChange={(e) => setSelectedPriority(e.target.value === "all" ? null : e.target.value)}
+                                                        >
+                                                            <option value="all">Prioridad: Todas</option>
+                                                            <option value="critical">Vital</option>
+                                                            <option value="high">Alta</option>
+                                                            <option value="normal">Normal</option>
+                                                            <option value="ghost">Puntuales</option>
+                                                        </select>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)} modal={false}>
+                                                            <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
+                                                                <SelectValue placeholder="Clase" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                                <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
+                                                                {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
+                                                                    <SelectItem key={key} value={key} className="text-xs text-white">{conf.label}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <Select value={selectedLocation || "all"} onValueChange={(v) => setSelectedLocation(v === "all" ? null : v)} modal={false}>
+                                                            <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
+                                                                <SelectValue placeholder="Ubicación" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                                <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
+                                                                {allLocations.map(loc => (
+                                                                    <SelectItem key={loc} value={loc} className="text-xs text-white">{loc}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <Select value={selectedPriority || "all"} onValueChange={(v) => setSelectedPriority(v === "all" ? null : v)} modal={false}>
+                                                            <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
+                                                                <SelectValue placeholder="Prioridad" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                                <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
+                                                                <SelectItem value="critical" className="text-xs text-white">Vital</SelectItem>
+                                                                <SelectItem value="high" className="text-xs text-white">Alta</SelectItem>
+                                                                <SelectItem value="normal" className="text-xs text-white">Normal</SelectItem>
+                                                                <SelectItem value="ghost" className="text-xs text-white">Puntuales</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </>
+                                                )}
                                             </div>
                                             <div className="flex gap-1.5 items-center">
                                                 <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider ml-1">Orden</span>
-                                                <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)} modal={false}>
-                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950/50 border-zinc-800 text-[10px] font-medium px-2">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                        <SelectItem value="name" className="text-xs text-white">Nombre</SelectItem>
-                                                        <SelectItem value="expiry" className="text-xs text-white">Caducidad</SelectItem>
-                                                        <SelectItem value="priority" className="text-xs text-white">Prioridad</SelectItem>
-                                                        <SelectItem value="category" className="text-xs text-white">Clase</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)} modal={false}>
-                                                    <SelectTrigger className="w-24 h-8 bg-zinc-950/50 border-zinc-800 text-[10px] font-medium px-2">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                        <SelectItem value="asc" className="text-xs text-white">Asc.</SelectItem>
-                                                        <SelectItem value="desc" className="text-xs text-white">Desc.</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                {useLowPerfUI ? (
+                                                    <select
+                                                        className="flex-1 h-8 bg-zinc-950 border border-zinc-800 text-[10px] font-bold px-2 rounded text-white appearance-none"
+                                                        value={sortBy}
+                                                        onChange={(e) => setSortBy(e.target.value as any)}
+                                                    >
+                                                        <option value="name">Nombre</option>
+                                                        <option value="expiry">Caducidad</option>
+                                                        <option value="added">Añadido</option>
+                                                        <option value="qty">Cantidad</option>
+                                                    </select>
+                                                ) : (
+                                                    <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)} modal={false}>
+                                                        <SelectTrigger className="flex-1 h-8 bg-zinc-950/50 border-zinc-800 text-[10px] font-medium px-2">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                            <SelectItem value="name" className="text-xs text-white">Nombre</SelectItem>
+                                                            <SelectItem value="expiry" className="text-xs text-white">Caducidad</SelectItem>
+                                                            <SelectItem value="added" className="text-xs text-white">Añadido</SelectItem>
+                                                            <SelectItem value="qty" className="text-xs text-white">Cantidad</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
+                                                {useLowPerfUI ? (
+                                                    <select
+                                                        className="h-8 bg-zinc-950 border border-zinc-800 text-[10px] font-bold px-2 rounded text-white appearance-none"
+                                                        value={sortOrder}
+                                                        onChange={(e) => setSortOrder(e.target.value as any)}
+                                                    >
+                                                        <option value="asc">Ascendente</option>
+                                                        <option value="desc">Descendente</option>
+                                                    </select>
+                                                ) : (
+                                                    <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)} modal={false}>
+                                                        <SelectTrigger className="w-24 h-8 bg-zinc-950/50 border-zinc-800 text-[10px] font-medium px-2">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                            <SelectItem value="asc" className="text-xs text-white">Ascendente</SelectItem>
+                                                            <SelectItem value="desc" className="text-xs text-white">Descendente</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                )}
                                             </div>
                                         </div>
                                         <ScrollArea className="flex-1 w-full">
