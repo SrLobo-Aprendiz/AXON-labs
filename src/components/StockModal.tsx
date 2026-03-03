@@ -368,7 +368,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                 quantity: 1,
                 is_manual: true
             });
-            
+
             if (error) throw error; // <-- ESTE ES EL CHIVATO MÁGICO
 
             toast({ title: "Añadido", description: `${item.name} a la lista de compra.` });
@@ -535,7 +535,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
                                                     <SelectValue placeholder="Clase" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800">
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="all" className="text-xs text-white">Todas las Clases</SelectItem>
                                                     {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
                                                         <SelectItem key={key} value={key} className="text-xs text-white">{conf.label}</SelectItem>
@@ -547,7 +547,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
                                                     <SelectValue placeholder="Ubicación" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800">
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="all" className="text-xs text-white">Todas las Ubicaciones</SelectItem>
                                                     {allLocations.sort().map(loc => (
                                                         <SelectItem key={loc} value={loc} className="text-xs text-white">{loc}</SelectItem>
@@ -559,7 +559,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
                                                     <SelectValue placeholder="Prioridad" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800">
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="all" className="text-xs text-white">Todas las Prioridades</SelectItem>
                                                     <SelectItem value="critical" className="text-xs text-white">Vital</SelectItem>
                                                     <SelectItem value="high" className="text-xs text-white">Alta</SelectItem>
@@ -574,7 +574,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 <SelectTrigger className="flex-1 h-8 bg-zinc-950/50 border-zinc-800 text-[11px] font-medium">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800">
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="name" className="text-xs text-white">Nombre</SelectItem>
                                                     <SelectItem value="expiry" className="text-xs text-white">Caducidad</SelectItem>
                                                     <SelectItem value="priority" className="text-xs text-white">Prioridad</SelectItem>
@@ -586,7 +586,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 <SelectTrigger className="w-28 h-8 bg-zinc-950/50 border-zinc-800 text-[11px] font-medium">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800">
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="asc" className="text-xs text-white">Ascendente</SelectItem>
                                                     <SelectItem value="desc" className="text-xs text-white">Descendente</SelectItem>
                                                 </SelectContent>
