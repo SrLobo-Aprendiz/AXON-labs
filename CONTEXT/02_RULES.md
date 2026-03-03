@@ -36,3 +36,14 @@
 - **Prohibido `autoFocus`:** Evita la pantalla blanca en WebViews antiguos.
 - **Smart Inputs:** Los ComboBox de Ubicación y Tienda deben recuperar el historial del `householdId` para evitar fatiga de escritura.
 - **Contrastes:** Verificar legibilidad en Dark Mode (evitar negro sobre negro en inputs).
+
+## 3. PROTOCOLOS DE ESTABILIDAD (AXON v5.8+)
+1. **Hard Data Lock**: Prohibido liberar el `LoadingScreen` hasta que la triada `session + profile + currentHousehold` esté resuelta (`!== undefined`). Evita el contenido fantasma ("Ghost UI").
+2. **Hybrid UI (OPPO Strategy)**: En modales pesados (StockModal), escalonar la carga:
+   - Delay de 250ms antes de pedir datos (permite renderizar animación de apertura).
+   - Renderizado perezoso (Lazy): Cargar primero lo esencial (Recepción) y tras 300ms el resto (Despensa).
+3. **Adaptive Branding**: La interfaz debe reaccionar visualmente al `profile.level`.
+   - Lvl 4 (Admin): Logo Bóveda + Spin lento.
+   - Lvl 2/3 (Teen/Junior): Logo Estándar + Brillo Verde + Glitch.
+   - Lvl 1 (Kid): Logo Robot + Bounce.
+   - Lvl 0 (Cargando): Logo AX Genérico + Pulse.

@@ -64,7 +64,7 @@
 - [ ] **Marketing:** Campañas masivas o influencers grandes.
 
 #ACTUALIZACION 23/2/26
-# ESTADO DEL PROYECTO (v5.6)
+# ESTADO DEL PROYECTO (v5.8)
 **ESTADO GLOBAL:** 🟡 BUILDING
 **FASE ACTUAL:** 1.5 - EL BÚNKER (Logística + Seguridad + i18n)
 
@@ -74,15 +74,14 @@
 - [x] **UI Normalization:** Alturas (`h-9`) y fondos (`bg-zinc-950`) unificados en diálogos de stock para un look premium.
 - [x] **Mobile UX Optimization:** Deshabilitada apertura automática de desplegables en foco y añadido disparador manual (`ChevronDown`) para evitar saltos de teclado en móviles.
 - [x] **SSoT de Categorías:** Centralizado en types.ts (Frescos, Higiene, Pescado).
-- [x] **Unificación de Precios:** Selector Unitario/Total integrado en diálogos.
-- [x] **Hotfix Vercel:** Dependencias corregidas (Semáforo Verde en Prod).
-- [x] **Integración Date Picker:** Soporte ES y Dark Mode nativo.
-- [x] **Refactor AddItemDialog:** Prioridades y Mínimos visibles nativamente.
-- [x] **AddBatch Fix:** Trazabilidad de `householdId` para autocompletado de Tiendas/Ubicaciones.
+- [x] **Onboarding Flow:** Extracción de la pantalla de bienvenida a una ruta dedicada `/setup`.
+- [x] **Ultra-Stability:** Implementado "Hard Data Lock" y carga escalonada para dispositivos de gama media (OPPO A72).
+- [x] **Adaptive Branding:** Pantalla de carga y Header dinámicos según el `profile.level` (Admin/Teen/Kid).
+- [x] **Sync DB (Profiles):** Columna `level` sincronizada e integrada en el frontend.
+- [x] **Asset Cache-Busting**: Implementado sistema de versiones para el favicon y branding oficial.
 
 ## 🚧 EN PROCESO (WIP)
-- [ ] **Migración DB (Capabilities):** Implementar la columna JSONB en `profiles`.
-- [ ] **RLS Liquid Trust:** Políticas de Supabase basadas en Capabilities.
+- [ ] **RLS Liquid Trust:** Políticas de Supabase basadas en Capabilities/Levels.
 - [ ] **i18n Engine:** Configurar traducciones para el "Pack Nacional".
 
 ## 📅 PENDIENTE (NEXT)
