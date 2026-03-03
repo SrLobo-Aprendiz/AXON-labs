@@ -4,7 +4,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const Select = SelectPrimitive.Root;
+const Select: React.FC<SelectPrimitive.SelectProps> = SelectPrimitive.Root;
 
 const SelectGroup = SelectPrimitive.Group;
 
@@ -62,6 +62,7 @@ const SelectContent = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content> & {
     onOpenAutoFocus?: (event: Event) => void;
+    onCloseAutoFocus?: (event: Event) => void;
   }
 >(({ className, children, position = "popper", ...props }, ref) => (
   <SelectPrimitive.Portal>

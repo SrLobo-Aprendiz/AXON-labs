@@ -531,11 +531,11 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                             <Input placeholder="Buscar producto..." className="pl-9 h-10 bg-zinc-950 border-zinc-800 text-sm focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                         </div>
                                         <div className="flex gap-2">
-                                            <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)}>
+                                            <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)} modal={false}>
                                                 <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
                                                     <SelectValue placeholder="Clase" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="all" className="text-xs text-white">Todas las Clases</SelectItem>
                                                     {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
                                                         <SelectItem key={key} value={key} className="text-xs text-white">{conf.label}</SelectItem>
@@ -543,11 +543,11 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 </SelectContent>
                                             </Select>
 
-                                            <Select value={selectedLocation || "all"} onValueChange={(v) => setSelectedLocation(v === "all" ? null : v)}>
+                                            <Select value={selectedLocation || "all"} onValueChange={(v) => setSelectedLocation(v === "all" ? null : v)} modal={false}>
                                                 <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
                                                     <SelectValue placeholder="Ubicación" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="all" className="text-xs text-white">Todas las Ubicaciones</SelectItem>
                                                     {allLocations.sort().map(loc => (
                                                         <SelectItem key={loc} value={loc} className="text-xs text-white">{loc}</SelectItem>
@@ -555,11 +555,11 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 </SelectContent>
                                             </Select>
 
-                                            <Select value={selectedPriority || "all"} onValueChange={(v) => setSelectedPriority(v === "all" ? null : v)}>
+                                            <Select value={selectedPriority || "all"} onValueChange={(v) => setSelectedPriority(v === "all" ? null : v)} modal={false}>
                                                 <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
                                                     <SelectValue placeholder="Prioridad" />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="all" className="text-xs text-white">Todas las Prioridades</SelectItem>
                                                     <SelectItem value="critical" className="text-xs text-white">Vital</SelectItem>
                                                     <SelectItem value="high" className="text-xs text-white">Alta</SelectItem>
@@ -570,11 +570,11 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                         </div>
                                         <div className="flex gap-2 items-center">
                                             <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Ordenar por</span>
-                                            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                                            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)} modal={false}>
                                                 <SelectTrigger className="flex-1 h-8 bg-zinc-950/50 border-zinc-800 text-[11px] font-medium">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="name" className="text-xs text-white">Nombre</SelectItem>
                                                     <SelectItem value="expiry" className="text-xs text-white">Caducidad</SelectItem>
                                                     <SelectItem value="priority" className="text-xs text-white">Prioridad</SelectItem>
@@ -582,11 +582,11 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                 </SelectContent>
                                             </Select>
 
-                                            <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                                            <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)} modal={false}>
                                                 <SelectTrigger className="w-28 h-8 bg-zinc-950/50 border-zinc-800 text-[11px] font-medium">
                                                     <SelectValue />
                                                 </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()}>
+                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
                                                     <SelectItem value="asc" className="text-xs text-white">Ascendente</SelectItem>
                                                     <SelectItem value="desc" className="text-xs text-white">Descendente</SelectItem>
                                                 </SelectContent>
