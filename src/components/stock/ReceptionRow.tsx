@@ -14,33 +14,34 @@ import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // Corregida ruta de importación
 import { LocationAutocomplete } from '@/components/LocationAutocomplete';
+import { StoreAutocomplete } from '@/components/StoreAutocomplete';
 
 interface ShoppingItem {
-  id: string;
-  item_name: string;
-  category?: string;
-  quantity?: number;
-  unit?: string;
-  priority?: 'critical' | 'high' | 'normal' | 'ghost';
-  is_ghost?: boolean;
+    id: string;
+    item_name: string;
+    category?: string;
+    quantity?: number;
+    unit?: string;
+    priority?: 'critical' | 'high' | 'normal' | 'ghost';
+    is_ghost?: boolean;
 }
 
 interface ReceptionRowProps {
-  item: ShoppingItem;
-  householdId: string;
-  onReceive: () => void;
+    item: ShoppingItem;
+    householdId: string;
+    onReceive: () => void;
 }
 
 export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, onReceive }) => {
     const { toast } = useToast();
-    
+
     // Estados básicos
     const [qty, setQty] = useState<string>(item.quantity?.toString() || '1');
-    const [unit, setUnit] = useState<string>(item.unit || 'uds'); 
+    const [unit, setUnit] = useState<string>(item.unit || 'uds');
     const [loc, setLoc] = useState('');
     const [date, setDate] = useState<Date | undefined>(undefined);
     const [store, setStore] = useState('');
-    
+
     // Precio Inteligente (SELECTOR UNIFICADO)
     const [priceInput, setPriceInput] = useState('');
     const [priceType, setPriceType] = useState<'total' | 'unit'>('total');
@@ -49,10 +50,10 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
     const [isChecking, setIsChecking] = useState(true);
     const [isNewProduct, setIsNewProduct] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
+
     // Config Producto
     const [isGhostMode, setIsGhostMode] = useState(item.is_ghost || false);
-    const [priorityMode, setPriorityMode] = useState<'critical'|'high'|'normal'>(
+    const [priorityMode, setPriorityMode] = useState<'critical' | 'high' | 'normal'>(
         (item.priority === 'ghost' ? 'normal' : item.priority) || 'normal'
     );
     const [manualMinQty, setManualMinQty] = useState<string>('');
@@ -65,14 +66,14 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                     .eq('household_id', householdId)
                     .ilike('name', item.item_name)
                     .maybeSingle();
-                
+
                 if (!data) {
                     setIsNewProduct(true);
                 } else {
                     if (data.unit) setUnit(data.unit);
                     setIsGhostMode(data.is_ghost || false);
                 }
-            } catch (e) { console.error(e); } 
+            } catch (e) { console.error(e); }
             finally { setIsChecking(false); }
         };
         check();
@@ -87,7 +88,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
             let finalUnitPrice = 0;
             const q = parseFloat(qty) || 0;
             const p = parseFloat(priceInput) || 0;
-            
+
             if (p > 0 && q > 0) {
                 finalUnitPrice = priceType === 'total' ? (p / q) : p;
             }
@@ -108,7 +109,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                     min_quantity: (!isGhostMode && manualMinQty) ? Number(manualMinQty) : null,
                     is_ghost: isGhostMode
                 }).select().single();
-                
+
                 if (error) throw error;
                 productId = newProd.id;
             }
@@ -118,7 +119,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                 household_id: householdId,
                 product_id: productId,
                 name: item.item_name,
-                category: item.category || 'Pantry', 
+                category: item.category || 'Pantry',
                 unit: unit,
                 quantity: q,
                 location: loc || 'Despensa',
@@ -130,7 +131,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
             // 4. Limpieza
             await supabase.from('inventory_items').delete().eq('product_id', productId).eq('quantity', 0);
             await supabase.from('shopping_list').delete().eq('id', item.id);
-            
+
             toast({ title: "Recibido", description: `${item.item_name} guardado.` });
             onReceive();
         } catch (e: any) {
@@ -140,18 +141,18 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
         }
     };
 
-    if (isChecking) return <div className="p-4 text-xs text-zinc-500 flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin"/> Verificando...</div>;
+    if (isChecking) return <div className="p-4 text-xs text-zinc-500 flex items-center gap-2"><Loader2 className="w-3 h-3 animate-spin" /> Verificando...</div>;
 
     return (
         <div className={cn("bg-zinc-900 border rounded-lg p-3 mb-2 flex flex-col gap-2 transition-colors", isNewProduct ? "border-blue-500/30 bg-blue-900/5" : "border-zinc-800")}>
-            
+
             {/* CABECERA */}
             <div className="flex justify-between items-start">
                 <div>
                     <span className="font-bold text-white block text-sm">{item.item_name}</span>
                     <Badge variant="outline" className="text-[10px] text-zinc-400 mt-1 border-zinc-700">{item.category}</Badge>
                 </div>
-                {isGhostMode && <Badge variant="secondary" className="bg-purple-900/50 text-purple-300 border-purple-500/50 text-[10px]"><Ghost className="w-3 h-3 mr-1"/> Ghost</Badge>}
+                {isGhostMode && <Badge variant="secondary" className="bg-purple-900/50 text-purple-300 border-purple-500/50 text-[10px]"><Ghost className="w-3 h-3 mr-1" /> Ghost</Badge>}
                 {isNewProduct && !isGhostMode && <Badge className="bg-blue-600 text-[10px] animate-pulse">NUEVO</Badge>}
             </div>
 
@@ -159,9 +160,9 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
             {isNewProduct && (
                 <div className="bg-black/20 p-2 rounded border border-blue-500/20 flex flex-col gap-2">
                     <div className="flex items-center gap-2 mb-1">
-                        <Checkbox 
-                            id={`ghost-${item.id}`} 
-                            checked={isGhostMode} 
+                        <Checkbox
+                            id={`ghost-${item.id}`}
+                            checked={isGhostMode}
                             onCheckedChange={(c: boolean) => setIsGhostMode(c)}
                             className="border-zinc-600 data-[state=checked]:bg-purple-600 border-purple-500/50"
                         />
@@ -173,8 +174,8 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                         <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-1">
                             <div className="flex flex-col gap-1">
                                 <Label className="text-[10px] text-blue-300 uppercase font-bold">Importancia</Label>
-                                <Select value={priorityMode} onValueChange={(v:any) => setPriorityMode(v)}>
-                                    <SelectTrigger className="h-7 text-xs bg-zinc-950 border-zinc-700"><SelectValue/></SelectTrigger>
+                                <Select value={priorityMode} onValueChange={(v: any) => setPriorityMode(v)}>
+                                    <SelectTrigger className="h-7 text-xs bg-zinc-950 border-zinc-700"><SelectValue /></SelectTrigger>
                                     <SelectContent className="bg-zinc-900 text-white border-zinc-800">
                                         <SelectItem value="critical" className="text-red-400 font-bold">🔴 Vital</SelectItem>
                                         <SelectItem value="high" className="text-orange-400 font-bold">🟠 Alta</SelectItem>
@@ -184,7 +185,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                             </div>
                             <div className="flex flex-col gap-1">
                                 <Label className="text-[10px] text-blue-300 uppercase font-bold">Min. Stock</Label>
-                                <Input type="number" className="h-7 text-xs bg-zinc-950 border-zinc-700" placeholder="Ej: 2" value={manualMinQty} onChange={e=>setManualMinQty(e.target.value)} />
+                                <Input type="number" className="h-7 text-xs bg-zinc-950 border-zinc-700" placeholder="Ej: 2" value={manualMinQty} onChange={e => setManualMinQty(e.target.value)} />
                             </div>
                         </div>
                     )}
@@ -195,7 +196,7 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
             <div className="grid grid-cols-2 gap-2 mt-1">
                 {/* 1. Cantidad */}
                 <div className="flex gap-1">
-                    <Input type="number" className="h-8 text-sm bg-zinc-950 border-zinc-700 text-center font-bold" value={qty} onChange={e=>setQty(e.target.value)} />
+                    <Input type="number" className="h-8 text-sm bg-zinc-950 border-zinc-700 text-center font-bold" value={qty} onChange={e => setQty(e.target.value)} />
                     <Select value={unit} onValueChange={setUnit}>
                         <SelectTrigger className="h-8 w-14 bg-zinc-950 border-zinc-700 px-1 text-[10px]"><SelectValue /></SelectTrigger>
                         <SelectContent className="bg-zinc-900 border-zinc-800 text-white min-w-[80px]">
@@ -206,14 +207,14 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
 
                 {/* 2. Precio Inteligente (SELECTOR) */}
                 <div className="flex gap-1">
-                    <Input 
-                        type="number" 
-                        placeholder="0.00" 
+                    <Input
+                        type="number"
+                        placeholder="0.00"
                         className="h-8 text-sm bg-zinc-950 border-zinc-700 text-right flex-1 min-w-0"
-                        value={priceInput} 
-                        onChange={e=>setPriceInput(e.target.value)} 
+                        value={priceInput}
+                        onChange={e => setPriceInput(e.target.value)}
                     />
-                    <Select value={priceType} onValueChange={(v:any)=>setPriceType(v)}>
+                    <Select value={priceType} onValueChange={(v: any) => setPriceType(v)}>
                         <SelectTrigger className="h-8 w-[70px] bg-zinc-950 border-zinc-700 px-1 text-[10px]">
                             <SelectValue />
                         </SelectTrigger>
@@ -225,28 +226,30 @@ export const ReceptionRow: React.FC<ReceptionRowProps> = ({ item, householdId, o
                 </div>
 
                 {/* 3. Tienda */}
-                <div className="relative">
-                    <Store className="absolute left-2 top-2 w-3 h-3 text-zinc-600"/>
-                    <Input className="h-8 text-xs bg-zinc-950 border-zinc-700 pl-7" placeholder="Tienda..." value={store} onChange={e=>setStore(e.target.value)} />
-                </div>
+                <StoreAutocomplete
+                    value={store}
+                    onChange={setStore}
+                    householdId={householdId}
+                    placeholder="Tienda..."
+                />
 
                 {/* 4. Ubicación */}
-                <LocationAutocomplete 
-                value={loc} 
-                onChange={setLoc} 
-                householdId={householdId} 
-                placeholder="¿Dónde lo guardas?" 
+                <LocationAutocomplete
+                    value={loc}
+                    onChange={setLoc}
+                    householdId={householdId}
+                    placeholder="¿Dónde lo guardas?"
                 />
             </div>
-            
+
             <div className="flex gap-2 mt-1">
                 <Popover>
-                    <PopoverTrigger asChild><Button variant="outline" className={cn("h-9 flex-1 px-2 border-zinc-700 bg-zinc-950 text-xs justify-start", !date && "text-zinc-500")}><CalendarIcon className="w-3 h-3 mr-2"/> {date ? format(date, 'dd/MM') : "Caducidad"}</Button></PopoverTrigger>
-                    <PopoverContent className="p-0 bg-zinc-950 border-zinc-800"><Calendar mode="single" selected={date} onSelect={setDate} className="bg-zinc-950 text-white"/></PopoverContent>
+                    <PopoverTrigger asChild><Button variant="outline" className={cn("h-9 flex-1 px-2 border-zinc-700 bg-zinc-950 text-xs justify-start", !date && "text-zinc-500")}><CalendarIcon className="w-3 h-3 mr-2" /> {date ? format(date, 'dd/MM') : "Caducidad"}</Button></PopoverTrigger>
+                    <PopoverContent className="p-0 bg-zinc-950 border-zinc-800"><Calendar mode="single" selected={date} onSelect={setDate} className="bg-zinc-950 text-white" /></PopoverContent>
                 </Popover>
-                
+
                 <Button className="h-9 bg-green-600 hover:bg-green-500 font-bold text-xs px-4" onClick={handleConfirm} disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin"/> : <><ArrowRight className="w-3 h-3 mr-1"/> OK</>}
+                    {isSubmitting ? <Loader2 className="w-3 h-3 animate-spin" /> : <><ArrowRight className="w-3 h-3 mr-1" /> OK</>}
                 </Button>
             </div>
         </div>
