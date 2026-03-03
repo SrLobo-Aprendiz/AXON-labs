@@ -5,12 +5,11 @@ import { NEXT_PUBLIC_APP_NAME } from '@/lib/config';
 
 // Componentes
 import { FridgeCanvas } from '@/components/FridgeCanvas';
-import CreateFamilyDialog from '@/components/CreateFamilyDialog';
 import { AppSettingsDialog } from '@/components/AppSettingsDialog';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 // UI Components
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -21,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Heart, LogOut, Settings, Users, ChevronDown, UserPlus,
+  Heart, LogOut, Settings, Users, ChevronDown,
   Key, MessageCircle
 } from 'lucide-react';
 
@@ -32,20 +31,22 @@ const Dashboard: React.FC = () => {
 
   // Redirect to auth if not authenticated
   React.useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/auth');
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        navigate('/auth');
+      } else if (currentHousehold === null) {
+        navigate('/setup');
+      }
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [isLoading, isAuthenticated, currentHousehold, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Cargando AXON OS...</div>
-      </div>
-    );
+  if (isLoading || (isAuthenticated && currentHousehold === undefined)) {
+    return <LoadingScreen />;
   }
 
-  if (!profile) return null;
+  if (!currentHousehold) {
+    return null;
+  }
 
   const getInitials = (name: string) => {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
@@ -60,8 +61,8 @@ const Dashboard: React.FC = () => {
 
           {/* IZQUIERDA: LOGO Y HOGAR */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-primary" />
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center overflow-hidden">
+              <img src="/axon-logo.png" alt="Logo" className="w-7 h-7 object-contain" />
             </div>
             <div className="hidden md:block">
               <h1 className="font-display font-bold text-lg">{NEXT_PUBLIC_APP_NAME}</h1>
@@ -117,45 +118,21 @@ const Dashboard: React.FC = () => {
 
       {/* --- MAIN CONTENT: SOLO LA NEVERA --- */}
       <main className="container mx-auto px-4 py-8">
-        {currentHousehold ? (
-          <div className="space-y-8 animate-in fade-in duration-500">
-
-            {/* LA NEVERA ES LA PROTAGONISTA */}
-            {/* Sin títulos encima, sin botones flotantes externos. Todo limpio. */}
-            <section className="relative group shadow-2xl rounded-2xl">
-              <FridgeCanvas householdId={currentHousehold.id} />
-            </section>
-
-          </div>
-        ) : (
-          /* PANTALLA DE BIENVENIDA (Sin Hogar) */
-          <Card className="max-w-md mx-auto mt-12 border-dashed">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <UserPlus className="w-8 h-8 text-primary" />
-              </div>
-              <CardTitle className="text-xl">Bienvenido a {NEXT_PUBLIC_APP_NAME}</CardTitle>
-              <CardDescription>
-                Crea un hogar para acceder a la Nevera Digital.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <CreateFamilyDialog>
-                <Button className="w-full h-11">Crear nuevo Hogar</Button>
-              </CreateFamilyDialog>
-            </CardContent>
-          </Card>
-        )}
+        <div className="space-y-8 animate-in fade-in duration-500">
+          {/* LA NEVERA ES LA PROTAGONISTA */}
+          {/* Sin títulos encima, sin botones flotantes externos. Todo limpio. */}
+          <section className="relative group shadow-2xl rounded-2xl">
+            <FridgeCanvas householdId={currentHousehold.id} />
+          </section>
+        </div>
       </main>
 
       {/* --- CHAT FLOTANTE (ABAJO DERECHA) --- */}
-      {currentHousehold && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Button size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-500 text-white">
-            <MessageCircle className="w-6 h-6" />
-          </Button>
-        </div>
-      )}
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button size="icon" className="h-14 w-14 rounded-full shadow-2xl bg-blue-600 hover:bg-blue-500 text-white">
+          <MessageCircle className="w-6 h-6" />
+        </Button>
+      </div>
 
       <AppSettingsDialog isOpen={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
     </div>

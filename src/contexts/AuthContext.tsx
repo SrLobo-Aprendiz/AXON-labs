@@ -9,7 +9,7 @@ interface AuthContextType {
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  currentHousehold: Household | null;
+  currentHousehold: Household | null | undefined;
   currentRole: HouseholdMember['role'] | null;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   signup: (email: string, password: string, displayName: string, pioneerCode?: string) => Promise<{ error: string | null }>;
@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [currentHousehold, setCurrentHousehold] = useState<Household | null>(null);
+  const [currentHousehold, setCurrentHousehold] = useState<Household | null | undefined>(undefined);
   const [currentRole, setCurrentRole] = useState<HouseholdMember['role'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, avatar_url, household_ids, ui_mode, updated_at, current_household_id, is_superadmin')
+      .select('id, email, full_name, avatar_url, household_ids, ui_mode, updated_at, current_household_id, is_superadmin, level, display_name, username')
       .eq('id', userId)
       .single();
 
@@ -90,46 +90,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return null;
   }, []);
 
-// Load user data after auth state change
-const loadUserData = useCallback(async (userId: string) => {
-  // 1. Cargamos el perfil básico
-  const userProfile = await fetchProfile(userId);
-  
-  if (userProfile) {
-    setProfile(userProfile);
+  // Load user data after auth state change
+  const loadUserData = useCallback(async (userId: string) => {
+    // 1. Cargamos el perfil básico
+    const userProfile = await fetchProfile(userId);
 
-    // --- CORRECCIÓN: Miramos directamente la tabla de miembros ---
-    const { data: memberData, error: memberError } = await supabase
-      .from('household_members')
-      .select('household_id, role')
-      .eq('user_id', userId)
-      .limit(1)
-      .maybeSingle();
+    if (userProfile) {
+      setProfile(userProfile);
 
-    // Si encontramos casa real en la DB...
-    if (memberData && memberData.household_id) {
-      const household = await fetchHousehold(memberData.household_id);
-      
-      if (household) {
-        setCurrentHousehold(household);
-        // Usamos el rol real de la base de datos
-        setCurrentRole(memberData.role as HouseholdMember['role']);
-        
-        // Sincronizamos el perfil silenciosamente si hace falta
-        if (userProfile.current_household_id !== household.id) {
-           supabase.from('profiles').update({ current_household_id: household.id }).eq('id', userId).then();
+      // --- CORRECCIÓN: Miramos directamente la tabla de miembros ---
+      const { data: memberData, error: memberError } = await supabase
+        .from('household_members')
+        .select('household_id, role')
+        .eq('user_id', userId)
+        .limit(1)
+        .maybeSingle();
+
+      // Si encontramos casa real en la DB...
+      if (memberData && memberData.household_id) {
+        const household = await fetchHousehold(memberData.household_id);
+
+        if (household) {
+          setCurrentHousehold(household);
+          // Usamos el rol real de la base de datos
+          setCurrentRole(memberData.role as HouseholdMember['role']);
+
+          // Sincronizamos el perfil silenciosamente si hace falta
+          if (userProfile.current_household_id !== household.id) {
+            supabase.from('profiles').update({ current_household_id: household.id }).eq('id', userId).then();
+          }
+        } else {
+          setCurrentHousehold(null);
+          setCurrentRole(null);
         }
       } else {
+        // No tiene casa
         setCurrentHousehold(null);
         setCurrentRole(null);
       }
-    } else {
-      // No tiene casa
-      setCurrentHousehold(null);
-      setCurrentRole(null);
     }
-  }
-}, [fetchProfile, fetchHousehold]);
+  }, [fetchProfile, fetchHousehold]);
 
 
   // Initialize auth state
@@ -268,7 +268,7 @@ const loadUserData = useCallback(async (userId: string) => {
 
   const switchHousehold = useCallback(async (householdId: string) => {
     if (!user || !profile) return;
-    
+
     if (!profile.household_ids?.includes(householdId)) {
       console.error('User is not a member of this household');
       return;
