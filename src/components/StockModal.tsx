@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { format, addDays, differenceInDays } from 'date-fns';
 import {
     Package, Search, AlertTriangle, ShoppingCart,
@@ -28,6 +28,109 @@ import { LocationAutocomplete } from './LocationAutocomplete';
 
 // Configuración
 import { CATEGORY_CONFIG, InventoryItem } from '@/lib/types';
+
+// --- COMPONENTES AUXILIARES MEMOIZADOS ---
+const ProductRow = React.memo(({
+    item,
+    onSelect,
+    onAddToShoppingList,
+    swipingId,
+    setSwipingId,
+    swipeOffset,
+    setSwipeOffset,
+    SWIPE_THRESHOLD
+}: any) => {
+    const catConf = CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG] || CATEGORY_CONFIG.Pantry;
+    const priorityColor = item.is_ghost ? "border-zinc-600/40" :
+        item.importance_level === 'critical' ? "border-red-500/50" :
+            item.importance_level === 'high' ? "border-orange-500/50" :
+                "border-blue-500/50";
+    const priorityText = item.is_ghost ? 'PUNTUAL' :
+        item.importance_level === 'critical' ? 'VITAL' :
+            item.importance_level === 'high' ? 'ALTA' : 'NORM.';
+    const priorityTextColor = item.is_ghost ? "text-zinc-500" :
+        item.importance_level === 'critical' ? "text-red-400" :
+            item.importance_level === 'high' ? "text-orange-400" : "text-blue-400";
+
+    const sid = item.product_id;
+    const isDragging = React.useRef(false);
+    const touchStartX = React.useRef(0);
+
+    return (
+        <div className={cn("rounded-xl border relative overflow-hidden", priorityColor)}>
+            <div className={cn(
+                "absolute inset-0 flex items-center pl-4",
+                swipeOffset === 0 ? "invisible" : "visible",
+                swipeOffset >= SWIPE_THRESHOLD ? "bg-green-600/25" : "bg-blue-600/15"
+            )}>
+                <ShoppingCart className={cn("w-5 h-5 transition-all duration-150", swipeOffset >= SWIPE_THRESHOLD ? "text-green-400 scale-125" : "text-blue-400 opacity-60")} />
+            </div>
+            <div
+                className="bg-zinc-900/40 p-2.5 flex items-center gap-2 cursor-grab active:cursor-grabbing relative select-none w-full"
+                style={{ transform: `translateX(${swipeOffset}px)`, transition: swipingId === sid ? 'none' : 'transform 0.25s ease' }}
+                onClick={() => { if (!isDragging.current) onSelect(item); }}
+                onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; setSwipingId(sid); isDragging.current = false; }}
+                onTouchMove={(e) => {
+                    const d = e.touches[0].clientX - touchStartX.current;
+                    if (d > 0) { isDragging.current = true; setSwipeOffset(sid, Math.min(d, 120)); }
+                }}
+                onTouchEnd={() => {
+                    setSwipingId(null);
+                    if (swipeOffset >= SWIPE_THRESHOLD) onAddToShoppingList(item);
+                    setSwipeOffset(sid, 0);
+                    setTimeout(() => { isDragging.current = false; }, 100);
+                }}
+                onMouseDown={(e) => { touchStartX.current = e.clientX; setSwipingId(sid); isDragging.current = false; }}
+                onMouseMove={(e) => {
+                    if (swipingId !== sid) return;
+                    const d = e.clientX - touchStartX.current;
+                    if (d > 5) { isDragging.current = true; setSwipeOffset(sid, Math.min(d, 120)); }
+                }}
+                onMouseUp={() => {
+                    if (swipingId !== sid) return;
+                    setSwipingId(null);
+                    if (swipeOffset >= SWIPE_THRESHOLD) onAddToShoppingList(item);
+                    setSwipeOffset(sid, 0);
+                    setTimeout(() => { isDragging.current = false; }, 100);
+                }}
+                onMouseLeave={() => {
+                    if (swipingId !== sid) return;
+                    setSwipingId(null);
+                    setSwipeOffset(sid, 0);
+                    setTimeout(() => { isDragging.current = false; }, 100);
+                }}
+            >
+                <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black tracking-tighter bg-zinc-800/80 rounded-br-lg shadow-sm z-10", priorityTextColor)}>
+                    {priorityText}
+                </div>
+                <div className="flex-1 min-w-0 pr-1 pt-1">
+                    <div className="font-bold text-[13.5px] text-zinc-100 leading-tight mb-0.5 truncate">{item.name}</div>
+                    <div className="flex items-center gap-2 text-[11.5px]">
+                        <div className="flex items-center gap-1 text-zinc-400 font-medium whitespace-nowrap">
+                            <Layers className="w-3 h-3 text-zinc-500" />
+                            <span>{item.batches.length} {item.batches.length === 1 ? 'lote' : 'lotes'}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-zinc-500 italic truncate opacity-70">
+                            • {Object.keys(item.locations).join(', ')}
+                        </div>
+                    </div>
+                </div>
+                <div className="shrink-0 flex flex-col items-end min-w-[65px]">
+                    <div className={cn("font-mono font-bold text-[13px] px-1.5 py-0.5 rounded-md whitespace-nowrap", item.total_quantity === 0 ? "text-red-400 bg-red-400/10" : "text-zinc-100 bg-zinc-800/50")}>
+                        {item.total_quantity} <span className="text-[10px] opacity-70 ml-0.5">{item.unit}</span>
+                    </div>
+                    {item.earliest_expiry && (
+                        <div className={cn("flex items-center gap-1 text-[10px] font-medium mt-1", differenceInDays(new Date(item.earliest_expiry), new Date()) < 7 ? "text-purple-400" : "text-emerald-500")}>
+                            <AlertTriangle className="w-2.5 h-2.5" />
+                            {format(new Date(item.earliest_expiry), 'dd/MM/yy')}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+});
+ProductRow.displayName = 'ProductRow';
 
 interface StockModalProps {
     isOpen: boolean;
@@ -386,7 +489,9 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
         fetchData();
     }
 
-    const allLocations = Array.from(new Set(rawInventoryItems.map(i => i.location).filter(Boolean)));
+    const allLocations = useMemo(() =>
+        Array.from(new Set(rawInventoryItems.map(i => i.location?.trim()).filter(Boolean))).sort()
+        , [rawInventoryItems]);
 
     const getPriorityWeight = (level: string, isGhost: boolean) => {
         if (isGhost) return 4; // Ghost is lowest priority in sorting unless specified otherwise
@@ -395,44 +500,46 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
         return 3; // normal
     };
 
-    const sortedAndFilteredProducts = groupedInventory
-        .filter(item => {
-            const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
-            const matchesLocation = selectedLocation ? Object.keys(item.locations).includes(selectedLocation) : true;
-            const matchesPriority = selectedPriority ? (
-                selectedPriority === 'ghost' ? item.is_ghost :
-                    (!item.is_ghost && item.importance_level === selectedPriority)
-            ) : true;
-            return matchesSearch && matchesCategory && matchesLocation && matchesPriority;
-        })
-        .sort((a, b) => {
-            let comparison = 0;
-            switch (sortBy) {
-                case 'name':
-                    comparison = a.name.localeCompare(b.name);
-                    break;
-                case 'expiry':
-                    const dateA = a.earliest_expiry ? new Date(a.earliest_expiry).getTime() : Infinity;
-                    const dateB = b.earliest_expiry ? new Date(b.earliest_expiry).getTime() : Infinity;
-                    comparison = dateA - dateB;
-                    break;
-                case 'priority':
-                    comparison = getPriorityWeight(a.importance_level, a.is_ghost) - getPriorityWeight(b.importance_level, b.is_ghost);
-                    break;
-                case 'category':
-                    const labelA = CATEGORY_CONFIG[a.category as keyof typeof CATEGORY_CONFIG]?.label || '';
-                    const labelB = CATEGORY_CONFIG[b.category as keyof typeof CATEGORY_CONFIG]?.label || '';
-                    comparison = labelA.localeCompare(labelB);
-                    break;
-            }
-            return sortOrder === 'asc' ? comparison : -comparison;
-        });
+    const sortedAndFilteredProducts = useMemo(() => {
+        return groupedInventory
+            .filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesCategory = selectedCategory ? item.category === selectedCategory : true;
+                const matchesLocation = selectedLocation ? Object.keys(item.locations).some(loc => loc.trim() === selectedLocation) : true;
+                const matchesPriority = selectedPriority ? (
+                    selectedPriority === 'ghost' ? item.is_ghost :
+                        (!item.is_ghost && item.importance_level === selectedPriority)
+                ) : true;
+                return matchesSearch && matchesCategory && matchesLocation && matchesPriority;
+            })
+            .sort((a, b) => {
+                let comparison = 0;
+                switch (sortBy) {
+                    case 'name':
+                        comparison = a.name.localeCompare(b.name);
+                        break;
+                    case 'expiry':
+                        const dateA = a.earliest_expiry ? new Date(a.earliest_expiry).getTime() : Infinity;
+                        const dateB = b.earliest_expiry ? new Date(b.earliest_expiry).getTime() : Infinity;
+                        comparison = dateA - dateB;
+                        break;
+                    case 'priority':
+                        comparison = getPriorityWeight(a.importance_level, a.is_ghost) - getPriorityWeight(b.importance_level, b.is_ghost);
+                        break;
+                    case 'category':
+                        const labelA = CATEGORY_CONFIG[a.category as keyof typeof CATEGORY_CONFIG]?.label || '';
+                        const labelB = CATEGORY_CONFIG[b.category as keyof typeof CATEGORY_CONFIG]?.label || '';
+                        comparison = labelA.localeCompare(labelB);
+                        break;
+                }
+                return sortOrder === 'asc' ? comparison : -comparison;
+            });
+    }, [groupedInventory, searchTerm, selectedCategory, selectedLocation, selectedPriority, sortBy, sortOrder]);
 
     return (
         <>
             <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-                <DialogContent className="bg-zinc-950 border-zinc-800 text-white w-[95vw] sm:w-full max-w-3xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl [&>button]:hidden">
+                <DialogContent className="bg-zinc-950 border-zinc-800 text-white w-[98vw] sm:w-full max-w-3xl h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-xl [&>button]:hidden focus:outline-none">
 
                     <DialogTitle className="sr-only">Gestión de Stock</DialogTitle>
                     <DialogDescription className="sr-only">Inventario</DialogDescription>
@@ -456,361 +563,254 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
 
                         {/* RECEPCIÓN */}
                         <TabsContent value="reception" className="flex-1 flex flex-col min-h-0 m-0 w-full h-full data-[state=inactive]:hidden">
-                            <ScrollArea className="flex-1 w-full p-4">
-                                {isLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div> :
-                                    receptionItems.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-zinc-500 min-h-[300px]"><CheckCircle2 className="w-12 h-12 mb-3 opacity-20" /><p className="text-sm">Todo colocado.</p></div> :
-                                        <div className="space-y-1 pb-4">{receptionItems.map(item => (<ReceptionRow key={item.id} item={item} householdId={householdId} onReceive={fetchData} />))}</div>}
-                            </ScrollArea>
+                            {activeTab === 'reception' && (
+                                <ScrollArea className="flex-1 w-full p-4">
+                                    {isLoading ? <div className="flex justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-blue-500" /></div> :
+                                        receptionItems.length === 0 ? <div className="flex flex-col items-center justify-center h-full text-zinc-500 min-h-[300px]"><CheckCircle2 className="w-12 h-12 mb-3 opacity-20" /><p className="text-sm">Todo colocado.</p></div> :
+                                            <div className="space-y-1 pb-4">{receptionItems.map(item => (<ReceptionRow key={item.id} item={item} householdId={householdId} onReceive={fetchData} />))}</div>}
+                                </ScrollArea>
+                            )}
                         </TabsContent>
 
                         {/* DESPENSA */}
                         <TabsContent value="pantry" className="flex-1 flex flex-col min-h-0 m-0 w-full h-full data-[state=inactive]:hidden">
-                            {selectedProduct ? (
-                                // VISTA DETALLE
-                                <div className="flex-1 flex flex-col min-h-0 bg-zinc-950 animate-in slide-in-from-right-10 w-full h-full">
-                                    <div className="p-4 border-b border-zinc-800 bg-zinc-900/50 flex flex-col gap-4 shrink-0">
-                                        <div className="flex justify-between items-start">
-                                            <Button variant="ghost" onClick={() => setSelectedProduct(null)} className="text-zinc-400 hover:text-white pl-0 gap-1 h-8"><ChevronLeft className="w-4 h-4" /> Volver</Button>
-                                            <div className="flex gap-1">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500 hover:bg-red-900/10" onClick={() => setShowDeleteConfirm(true)}><Trash2 className="w-4 h-4" /></Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={() => setShowEditDialog(true)}><Pencil className="w-4 h-4" /></Button>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="text-xl font-bold text-white flex items-center gap-2">{selectedProduct.name}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className={cn("text-2xl font-mono font-bold", selectedProduct.total_quantity === 0 ? "text-red-500" : "text-white")}>{selectedProduct.total_quantity}</span>
-                                                    <span className="text-zinc-500">{selectedProduct.unit}</span>
-                                                    {selectedProduct.is_ghost && <Badge variant="secondary" className="ml-2 bg-purple-900/20 text-purple-400 border-purple-500/30 text-[10px]">Ghost</Badge>}
+                            {activeTab === 'pantry' && (
+                                selectedProduct ? (
+                                    // VISTA DETALLE
+                                    <div className="flex-1 flex flex-col min-h-0 bg-zinc-950 animate-in slide-in-from-right-10 w-full h-full">
+                                        <div className="p-4 border-b border-zinc-800 bg-zinc-900/50 flex flex-col gap-4 shrink-0">
+                                            <div className="flex justify-between items-start">
+                                                <Button variant="ghost" onClick={() => setSelectedProduct(null)} className="text-zinc-400 hover:text-white pl-0 gap-1 h-8"><ChevronLeft className="w-4 h-4" /> Volver</Button>
+                                                <div className="flex gap-1">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-red-500 hover:bg-red-900/10" onClick={() => setShowDeleteConfirm(true)}><Trash2 className="w-4 h-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-500 hover:text-white" onClick={() => setShowEditDialog(true)}><Pencil className="w-4 h-4" /></Button>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded border border-zinc-800">
-                                                <Input type="number" placeholder="0" className="w-12 h-8 bg-transparent border-none text-right text-white font-bold" value={consumeAmount} onChange={e => setConsumeAmount(e.target.value)} />
-                                                <Button size="sm" variant="destructive" className="h-8 px-3" onClick={handleConsume} disabled={!consumeAmount}><Minus className="w-4 h-4" /></Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <ScrollArea className="flex-1 w-full">
-                                        <div className="p-4 space-y-4 pb-20">
                                             <div className="flex items-center justify-between">
-                                                <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">Desglose de Lotes</h4>
-                                                <Popover open={isMassCustomMode} onOpenChange={setIsMassCustomMode}>
-                                                    <PopoverTrigger asChild><Button variant="outline" size="sm" className="h-6 text-[10px] border-blue-900/30 text-blue-400 gap-1"><Layers className="w-3 h-3" /> Mover Todo</Button></PopoverTrigger>
-                                                    <PopoverContent className="w-56 p-3 bg-zinc-950 border-zinc-700">
-                                                        <div className="space-y-2">
-                                                            <p className="text-[10px] text-zinc-400 font-bold uppercase">Mover todo a:</p>
-                                                            <LocationAutocomplete value={massCustomLoc} onChange={setMassCustomLoc} householdId={householdId} placeholder="Destino..." />
-                                                            <Button size="sm" className="w-full h-7 bg-blue-600" onClick={() => handleMoveAllBatches(massCustomLoc)}>Confirmar</Button>
-                                                        </div>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {rawInventoryItems.filter(i => i.product_id === selectedProduct.product_id && i.quantity > 0).sort((a, b) => new Date(a.expiry_date || '9999').getTime() - new Date(b.expiry_date || '9999').getTime()).map(batch => (
-                                                    <InventoryBatchRow key={batch.id} batch={batch} unit={selectedProduct.unit} householdId={householdId} onDelete={handleDeleteBatch} onUpdate={handleUpdateBatch} onMove={handleMoveBatch} />
-                                                ))}
-                                                {rawInventoryItems.every(i => i.product_id === selectedProduct.product_id && i.quantity === 0) && <div className="text-center py-8 border border-dashed border-zinc-800 rounded-lg"><p className="text-zinc-500 text-xs">Sin stock físico actualmente.</p></div>}
-                                            </div>
-                                        </div>
-                                    </ScrollArea>
-
-                                    {/* AQUI ESTÁ EL BOTÓN CORRECTO: Añadir Lote Manual */}
-                                    <div className="p-4 border-t border-zinc-800 bg-zinc-900 shrink-0">
-                                        <Button className="w-full bg-blue-600 hover:bg-blue-500 shadow-lg" onClick={() => setIsAddBatchOpen(true)}>
-                                            <Plus className="w-4 h-4 mr-2" /> Añadir Lote Manual
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                // VISTA LISTA (Botón Nuevo Producto)
-                                <div className="flex-1 flex flex-col min-h-0 bg-zinc-950 w-full h-full justify-start">
-                                    <div className="p-3 border-b border-zinc-800 bg-zinc-900 shrink-0 space-y-3">
-                                        <div className="relative">
-                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
-                                            <Input placeholder="Buscar producto..." className="pl-9 h-10 bg-zinc-950 border-zinc-800 text-sm focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)} modal={false}>
-                                                <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
-                                                    <SelectValue placeholder="Clase" />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                    <SelectItem value="all" className="text-xs text-white">Todas las Clases</SelectItem>
-                                                    {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
-                                                        <SelectItem key={key} value={key} className="text-xs text-white">{conf.label}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-
-                                            <Select value={selectedLocation || "all"} onValueChange={(v) => setSelectedLocation(v === "all" ? null : v)} modal={false}>
-                                                <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
-                                                    <SelectValue placeholder="Ubicación" />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                    <SelectItem value="all" className="text-xs text-white">Todas las Ubicaciones</SelectItem>
-                                                    {allLocations.sort().map(loc => (
-                                                        <SelectItem key={loc} value={loc} className="text-xs text-white">{loc}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-
-                                            <Select value={selectedPriority || "all"} onValueChange={(v) => setSelectedPriority(v === "all" ? null : v)} modal={false}>
-                                                <SelectTrigger className="flex-1 h-9 bg-zinc-950 border-zinc-800 text-xs font-bold">
-                                                    <SelectValue placeholder="Prioridad" />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                    <SelectItem value="all" className="text-xs text-white">Todas las Prioridades</SelectItem>
-                                                    <SelectItem value="critical" className="text-xs text-white">Vital</SelectItem>
-                                                    <SelectItem value="high" className="text-xs text-white">Alta</SelectItem>
-                                                    <SelectItem value="normal" className="text-xs text-white">Normal</SelectItem>
-                                                    <SelectItem value="ghost" className="text-xs text-white">Puntuales (Ghost)</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="flex gap-2 items-center">
-                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Ordenar por</span>
-                                            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)} modal={false}>
-                                                <SelectTrigger className="flex-1 h-8 bg-zinc-950/50 border-zinc-800 text-[11px] font-medium">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                    <SelectItem value="name" className="text-xs text-white">Nombre</SelectItem>
-                                                    <SelectItem value="expiry" className="text-xs text-white">Caducidad</SelectItem>
-                                                    <SelectItem value="priority" className="text-xs text-white">Prioridad</SelectItem>
-                                                    <SelectItem value="category" className="text-xs text-white">Clase</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-
-                                            <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)} modal={false}>
-                                                <SelectTrigger className="w-28 h-8 bg-zinc-950/50 border-zinc-800 text-[11px] font-medium">
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
-                                                    <SelectItem value="asc" className="text-xs text-white">Ascendente</SelectItem>
-                                                    <SelectItem value="desc" className="text-xs text-white">Descendente</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                    <ScrollArea className="flex-1 w-full">
-                                        <div className="p-3 space-y-2 pb-20">
-                                            {sortedAndFilteredProducts.map(item => {
-                                                const catConf = CATEGORY_CONFIG[item.category as keyof typeof CATEGORY_CONFIG] || CATEGORY_CONFIG.Pantry;
-                                                const Icon = catConf.icon;
-                                                const priorityColor = item.is_ghost ? "border-zinc-600/40 shadow-none" :
-                                                    item.importance_level === 'critical' ? "border-red-500/50 shadow-[0_0_8px_rgba(239,68,68,0.1)]" :
-                                                        item.importance_level === 'high' ? "border-orange-500/50 shadow-[0_0_8px_rgba(249,115,22,0.1)]" :
-                                                            "border-blue-500/50 shadow-[0_0_8px_rgba(59,130,246,0.1)]";
-                                                const priorityText = item.is_ghost ? 'PUNTUAL' :
-                                                    item.importance_level === 'critical' ? 'VITAL' :
-                                                        item.importance_level === 'high' ? 'ALTA' : 'NORM.';
-                                                const priorityTextColor = item.is_ghost ? "text-zinc-500" :
-                                                    item.importance_level === 'critical' ? "text-red-400" :
-                                                        item.importance_level === 'high' ? "text-orange-400" : "text-blue-400";
-                                                const sid = item.product_id;
-                                                const offset = swipeOffsets[sid] || 0;
-
-                                                return (
-                                                    <div key={sid} className={cn("rounded-xl border relative overflow-hidden", priorityColor)}>
-                                                        {/* Swipe reveal */}
-                                                        <div className={cn(
-                                                            "absolute inset-0 flex items-center pl-4",
-                                                            offset === 0 ? "invisible" : "visible",
-                                                            offset >= SWIPE_THRESHOLD ? "bg-green-600/25" : "bg-blue-600/15"
-                                                        )}>
-                                                            <ShoppingCart className={cn("w-5 h-5 transition-all duration-150", offset >= SWIPE_THRESHOLD ? "text-green-400 scale-125" : "text-blue-400 opacity-60")} />
-                                                        </div>
-                                                        {/* Row */}
-                                                        <div
-                                                            className="bg-zinc-900/40 p-3 flex items-center gap-2 cursor-grab active:cursor-grabbing relative select-none"
-                                                            style={{ transform: `translateX(${offset}px)`, transition: swipingId === sid ? 'none' : 'transform 0.25s ease' }}
-                                                            onClick={() => { if (!isDragging.current) setSelectedProduct(item); }}
-                                                            onTouchStart={(e) => { touchStartX.current[sid] = e.touches[0].clientX; setSwipingId(sid); isDragging.current = false; }}
-                                                            onTouchMove={(e) => {
-                                                                const d = e.touches[0].clientX - (touchStartX.current[sid] || 0);
-                                                                if (d > 0) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
-                                                            }}
-                                                            onTouchEnd={() => {
-                                                                setSwipingId(null);
-                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
-                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
-                                                                setTimeout(() => { isDragging.current = false; }, 100);
-                                                            }}
-                                                            onMouseDown={(e) => { touchStartX.current[sid] = e.clientX; setSwipingId(sid); isDragging.current = false; }}
-                                                            onMouseMove={(e) => {
-                                                                if (swipingId !== sid) return;
-                                                                const d = e.clientX - (touchStartX.current[sid] || 0);
-                                                                if (d > 5) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
-                                                            }}
-                                                            onMouseUp={() => {
-                                                                if (swipingId !== sid) return;
-                                                                setSwipingId(null);
-                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
-                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
-                                                                setTimeout(() => { isDragging.current = false; }, 100);
-                                                            }}
-                                                            onMouseLeave={() => {
-                                                                if (swipingId !== sid) return;
-                                                                setSwipingId(null);
-                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
-                                                                setTimeout(() => { isDragging.current = false; }, 100);
-                                                            }}
-                                                        >
-                                                            {/* Priority Label Top-Left */}
-                                                            <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter bg-zinc-800/80 rounded-br-lg shadow-sm z-10", priorityTextColor)}>
-                                                                {priorityText}
-                                                            </div>
-                                                            {/* Name + Metadata */}
-                                                            <div className="flex-1 min-w-0 pr-2 pt-1">
-                                                                <div className="font-bold text-[14px] text-zinc-100 leading-tight mb-1 truncate">{item.name}</div>
-                                                                <div className="flex items-center gap-3 text-[12.5px]">
-                                                                    <div className="flex items-center gap-1.5 text-zinc-400 font-medium whitespace-nowrap">
-                                                                        <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                                                                        <span>{item.batches.length} {item.batches.length === 1 ? 'lote' : 'lotes'}</span>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1 text-zinc-500 italic truncate opacity-80">
-                                                                        • {Object.keys(item.locations).join(', ')}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            {/* Quantity */}
-                                                            <div className="shrink-0 flex flex-col items-end">
-                                                                <div className={cn("font-mono font-bold text-[15px] px-2 py-0.5 rounded-md", item.total_quantity === 0 ? "text-red-400 bg-red-400/10" : "text-zinc-100 bg-zinc-800/50")}>
-                                                                    {item.total_quantity} <span className="text-[10px] opacity-70 ml-0.5">{item.unit}</span>
-                                                                </div>
-                                                                {item.earliest_expiry && (
-                                                                    <div className={cn("flex items-center gap-1 text-[11px] font-medium mt-1.5", differenceInDays(new Date(item.earliest_expiry), new Date()) < 7 ? "text-purple-400" : "text-emerald-500")}>
-                                                                        <AlertTriangle className="w-3 h-3" />
-                                                                        {format(new Date(item.earliest_expiry), 'dd/MM/yy')}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                <div className="min-w-0 pr-2">
+                                                    <h3 className="text-xl font-bold text-white flex items-center gap-2 truncate">{selectedProduct.name}</h3>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={cn("text-2xl font-mono font-bold", selectedProduct.total_quantity === 0 ? "text-red-500" : "text-white")}>{selectedProduct.total_quantity}</span>
+                                                        <span className="text-zinc-500">{selectedProduct.unit}</span>
+                                                        {selectedProduct.is_ghost && <Badge variant="secondary" className="ml-2 bg-purple-900/20 text-purple-400 border-purple-500/30 text-[10px]">Ghost</Badge>}
                                                     </div>
-                                                );
-                                            })}
-                                            {sortedAndFilteredProducts.length === 0 && <div className="text-center py-10 text-zinc-500 text-xs">No hay productos.</div>}
+                                                </div>
+                                                <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded border border-zinc-800 shrink-0">
+                                                    <Input type="number" placeholder="0" className="w-12 h-8 bg-transparent border-none text-right text-white font-bold" value={consumeAmount} onChange={e => setConsumeAmount(e.target.value)} />
+                                                    <Button size="sm" variant="destructive" className="h-8 px-3" onClick={handleConsume} disabled={!consumeAmount}><Minus className="w-4 h-4" /></Button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </ScrollArea>
-                                    <div className="p-4 border-t border-zinc-800 bg-zinc-900 shrink-0 mt-auto"><AddItemDialogWrapper householdId={householdId} onItemAdded={fetchData} /></div>
-                                </div>
+                                        <ScrollArea className="flex-1 w-full">
+                                            <div className="p-4 space-y-4 pb-20">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider">Desglose de Lotes</h4>
+                                                    <Popover open={isMassCustomMode} onOpenChange={setIsMassCustomMode}>
+                                                        <PopoverTrigger asChild><Button variant="outline" size="sm" className="h-6 text-[10px] border-blue-900/30 text-blue-400 gap-1"><Layers className="w-3 h-3" /> Mover Todo</Button></PopoverTrigger>
+                                                        <PopoverContent className="w-56 p-3 bg-zinc-950 border-zinc-700">
+                                                            <div className="space-y-2">
+                                                                <p className="text-[10px] text-zinc-400 font-bold uppercase">Mover todo a:</p>
+                                                                <LocationAutocomplete value={massCustomLoc} onChange={setMassCustomLoc} householdId={householdId} placeholder="Destino..." />
+                                                                <Button size="sm" className="w-full h-7 bg-blue-600" onClick={() => handleMoveAllBatches(massCustomLoc)}>Confirmar</Button>
+                                                            </div>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {rawInventoryItems.filter(i => i.product_id === selectedProduct.product_id && i.quantity > 0).sort((a, b) => new Date(a.expiry_date || '9999').getTime() - new Date(b.expiry_date || '9999').getTime()).map(batch => (
+                                                        <InventoryBatchRow key={batch.id} batch={batch} unit={selectedProduct.unit} householdId={householdId} onDelete={handleDeleteBatch} onUpdate={handleUpdateBatch} onMove={handleMoveBatch} />
+                                                    ))}
+                                                    {rawInventoryItems.every(i => i.product_id === selectedProduct.product_id && i.quantity === 0) && <div className="text-center py-8 border border-dashed border-zinc-800 rounded-lg"><p className="text-zinc-500 text-xs">Sin stock físico actualmente.</p></div>}
+                                                </div>
+                                            </div>
+                                        </ScrollArea>
+                                        <div className="p-4 border-t border-zinc-800 bg-zinc-900 shrink-0">
+                                            <Button className="w-full bg-blue-600 hover:bg-blue-500 shadow-lg" onClick={() => setIsAddBatchOpen(true)}>
+                                                <Plus className="w-4 h-4 mr-2" /> Añadir Lote Manual
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    // VISTA LISTA
+                                    <div className="flex-1 flex flex-col min-h-0 bg-zinc-950 w-full h-full justify-start">
+                                        <div className="p-2 border-b border-zinc-800 bg-zinc-900 shrink-0 space-y-2">
+                                            <div className="relative">
+                                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-zinc-500" />
+                                                <Input placeholder="Buscar producto..." className="pl-9 h-10 bg-zinc-950 border-zinc-800 text-sm focus:ring-blue-500" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                            </div>
+                                            <div className="flex gap-1.5">
+                                                <Select value={selectedCategory || "all"} onValueChange={(v) => setSelectedCategory(v === "all" ? null : v)} modal={false}>
+                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
+                                                        <SelectValue placeholder="Clase" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                        <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
+                                                        {Object.entries(CATEGORY_CONFIG).map(([key, conf]) => (
+                                                            <SelectItem key={key} value={key} className="text-xs text-white">{conf.label}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <Select value={selectedLocation || "all"} onValueChange={(v) => setSelectedLocation(v === "all" ? null : v)} modal={false}>
+                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
+                                                        <SelectValue placeholder="Ubicación" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                        <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
+                                                        {allLocations.map(loc => (
+                                                            <SelectItem key={loc} value={loc} className="text-xs text-white">{loc}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <Select value={selectedPriority || "all"} onValueChange={(v) => setSelectedPriority(v === "all" ? null : v)} modal={false}>
+                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950 border-zinc-800 text-[10px] font-bold px-2">
+                                                        <SelectValue placeholder="Prioridad" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                        <SelectItem value="all" className="text-xs text-white">Todas</SelectItem>
+                                                        <SelectItem value="critical" className="text-xs text-white">Vital</SelectItem>
+                                                        <SelectItem value="high" className="text-xs text-white">Alta</SelectItem>
+                                                        <SelectItem value="normal" className="text-xs text-white">Normal</SelectItem>
+                                                        <SelectItem value="ghost" className="text-xs text-white">Puntuales</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="flex gap-1.5 items-center">
+                                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider ml-1">Orden</span>
+                                                <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)} modal={false}>
+                                                    <SelectTrigger className="flex-1 h-8 bg-zinc-950/50 border-zinc-800 text-[10px] font-medium px-2">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                        <SelectItem value="name" className="text-xs text-white">Nombre</SelectItem>
+                                                        <SelectItem value="expiry" className="text-xs text-white">Caducidad</SelectItem>
+                                                        <SelectItem value="priority" className="text-xs text-white">Prioridad</SelectItem>
+                                                        <SelectItem value="category" className="text-xs text-white">Clase</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)} modal={false}>
+                                                    <SelectTrigger className="w-24 h-8 bg-zinc-950/50 border-zinc-800 text-[10px] font-medium px-2">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-zinc-950 border-zinc-800" onOpenAutoFocus={(e) => e.preventDefault()} onCloseAutoFocus={(e) => e.preventDefault()}>
+                                                        <SelectItem value="asc" className="text-xs text-white">Asc.</SelectItem>
+                                                        <SelectItem value="desc" className="text-xs text-white">Desc.</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                        <ScrollArea className="flex-1 w-full">
+                                            <div className="p-2 space-y-2 pb-20">
+                                                {sortedAndFilteredProducts.map(item => (
+                                                    <ProductRow
+                                                        key={item.product_id}
+                                                        item={item}
+                                                        onSelect={setSelectedProduct}
+                                                        onAddToShoppingList={handleAddToShoppingList}
+                                                        swipingId={swipingId}
+                                                        setSwipingId={setSwipingId}
+                                                        swipeOffset={swipeOffsets[item.product_id] || 0}
+                                                        setSwipeOffset={(id: string, val: number) => setSwipeOffsets(prev => ({ ...prev, [id]: val }))}
+                                                        SWIPE_THRESHOLD={SWIPE_THRESHOLD}
+                                                        touchStartX={touchStartX}
+                                                        isDragging={isDragging}
+                                                    />
+                                                ))}
+                                                {sortedAndFilteredProducts.length === 0 && <div className="text-center py-10 text-zinc-500 text-xs">No hay productos.</div>}
+                                            </div>
+                                        </ScrollArea>
+                                        <div className="p-4 border-t border-zinc-800 bg-zinc-900 shrink-0 mt-auto"><AddItemDialogWrapper householdId={householdId} onItemAdded={fetchData} /></div>
+                                    </div>
+                                )
                             )}
                         </TabsContent>
 
                         <TabsContent value="alerts" className="flex-1 flex flex-col min-h-0 m-0 w-full h-full justify-start data-[state=inactive]:hidden">
-                            <Tabs defaultValue="critical" className="flex-1 flex flex-col min-h-0 w-full h-full">
-                                <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900 shrink-0">
-                                    <TabsList className="grid w-full grid-cols-2 h-8 bg-zinc-950">
-                                        <TabsTrigger value="critical" className="text-xs data-[state=active]:text-red-400">Críticos ({criticalAlerts.length})</TabsTrigger>
-                                        <TabsTrigger value="suggestions" className="text-xs data-[state=active]:text-purple-400">Sugerencias ({suggestionAlerts.length})</TabsTrigger>
-                                    </TabsList>
-                                </div>
-                                <ScrollArea className="flex-1 w-full p-4">
-                                    <div className="space-y-4 pb-10">
-                                        <TabsContent value="critical" className="mt-0 space-y-2 data-[state=inactive]:hidden">
-                                            {criticalAlerts.length === 0 && <div className="flex flex-col items-center justify-center h-40 text-zinc-500 gap-2"><CheckCircle2 className="w-8 h-8 opacity-50 text-green-500" /><span className="text-xs">Todo en orden por aquí.</span></div>}
-                                            {criticalAlerts.map(item => {
-                                                const critLabel = item.importance_level === 'critical' ? 'VITAL' : item.importance_level === 'high' ? 'ALTA' : 'NORM.';
-                                                const critLabelColor = item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" : item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
-                                                return (
-                                                    <div key={item.product_id} className="bg-red-900/10 border border-red-500/30 rounded-xl p-3.5 flex items-center gap-3 relative overflow-hidden">
-                                                        <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black tracking-widest rounded-br-lg", critLabelColor)}>
-                                                            {critLabel}
-                                                        </div>
-                                                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
-                                                        <div className="flex-1 text-center min-w-0 px-4">
-                                                            <div className="font-bold text-sm text-red-200 truncate">{item.name}</div>
-                                                            <div className="text-[12.5px] text-red-400/90 mt-0.5 font-medium">{item.reason}</div>
-                                                        </div>
-                                                        <div className="w-5 h-5 shrink-0" />
-                                                    </div>
-                                                );
-                                            })}
-                                        </TabsContent>
-                                        <TabsContent value="suggestions" className="mt-0 space-y-2 data-[state=inactive]:hidden">
-                                            {suggestionAlerts.length === 0 && <div className="flex flex-col items-center justify-center h-40 text-zinc-500 gap-2"><span className="text-xs">Sin sugerencias.</span></div>}
-                                            {suggestionAlerts.map(item => {
-                                                const suggLabel = item.is_ghost ? 'PUNTUAL' :
-                                                    item.importance_level === 'critical' ? 'VITAL' :
-                                                        item.importance_level === 'high' ? 'ALTA' : 'NORM.';
-                                                const suggLabelColor = item.is_ghost ? "bg-zinc-700/40 text-zinc-500" :
-                                                    item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" :
-                                                        item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
-                                                const sid = `sugg_${item.product_id}`;
-                                                const offset = swipeOffsets[sid] || 0;
-                                                return (
-                                                    <div key={item.product_id} className={cn("rounded-xl border relative overflow-hidden", item.severity === 'expiry' ? "border-purple-500/30" : "border-blue-500/30")}>
-                                                        {/* Swipe reveal */}
-                                                        <div className={cn("absolute inset-0 flex items-center pl-4", offset === 0 ? "invisible" : "visible", offset >= SWIPE_THRESHOLD ? "bg-green-600/25" : "bg-blue-600/15")}>
-                                                            <ShoppingCart className={cn("w-5 h-5 transition-all duration-150", offset >= SWIPE_THRESHOLD ? "text-green-400 scale-125" : "text-blue-400 opacity-60")} />
-                                                        </div>
-                                                        {/* Row */}
-                                                        <div
-                                                            className="bg-zinc-900/40 p-3.5 flex items-center gap-3 relative cursor-grab active:cursor-grabbing select-none"
-                                                            style={{ transform: `translateX(${offset}px)`, transition: swipingId === sid ? 'none' : 'transform 0.25s ease' }}
-                                                            onTouchStart={(e) => { touchStartX.current[sid] = e.touches[0].clientX; setSwipingId(sid); isDragging.current = false; }}
-                                                            onTouchMove={(e) => {
-                                                                const d = e.touches[0].clientX - (touchStartX.current[sid] || 0);
-                                                                if (d > 0) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
-                                                            }}
-                                                            onTouchEnd={() => {
-                                                                setSwipingId(null);
-                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
-                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
-                                                                setTimeout(() => { isDragging.current = false; }, 100);
-                                                            }}
-                                                            onMouseDown={(e) => { touchStartX.current[sid] = e.clientX; setSwipingId(sid); isDragging.current = false; }}
-                                                            onMouseMove={(e) => {
-                                                                if (swipingId !== sid) return;
-                                                                const d = e.clientX - (touchStartX.current[sid] || 0);
-                                                                if (d > 5) { isDragging.current = true; setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) })); }
-                                                            }}
-                                                            onMouseUp={() => {
-                                                                if (swipingId !== sid) return;
-                                                                setSwipingId(null);
-                                                                if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
-                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
-                                                                setTimeout(() => { isDragging.current = false; }, 100);
-                                                            }}
-                                                            onMouseLeave={() => {
-                                                                if (swipingId !== sid) return;
-                                                                setSwipingId(null);
-                                                                setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
-                                                                setTimeout(() => { isDragging.current = false; }, 100);
-                                                            }}
-                                                        >
-                                                            {/* Priority Label top-left */}
-                                                            <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[9px] font-black tracking-tighter rounded-br-lg", suggLabelColor)}>
-                                                                {suggLabel}
-                                                            </div>
-                                                            {/* Icon */}
-                                                            <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", item.severity === 'expiry' ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400")}>
-                                                                {item.severity === 'expiry' ? <Skull className="w-4 h-4" /> : <Info className="w-4 h-4" />}
-                                                            </div>
-                                                            {/* Name + reason subtitle */}
-                                                            <div className="flex-1 text-center min-w-0 px-2">
-                                                                <div className={cn("font-bold text-sm truncate", item.severity === 'expiry' ? "text-purple-200" : "text-blue-200")}>
-                                                                    {item.name}
-                                                                </div>
-                                                                <div className={cn("text-[12.5px] font-medium opacity-90 mt-0.5", item.severity === 'expiry' ? "text-purple-400" : "text-blue-400")}>
-                                                                    {item.reason}
-                                                                </div>
-                                                            </div>
-                                                            {/* Spacer to balance the left icon */}
-                                                            <div className="w-7 shrink-0" />
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </TabsContent>
+                            {activeTab === 'alerts' && (
+                                <Tabs defaultValue="critical" className="flex-1 flex flex-col min-h-0 w-full h-full">
+                                    <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900 shrink-0">
+                                        <TabsList className="grid w-full grid-cols-2 h-8 bg-zinc-950">
+                                            <TabsTrigger value="critical" className="text-xs data-[state=active]:text-red-400">Críticos ({criticalAlerts.length})</TabsTrigger>
+                                            <TabsTrigger value="suggestions" className="text-xs data-[state=active]:text-purple-400">Sugerencias ({suggestionAlerts.length})</TabsTrigger>
+                                        </TabsList>
                                     </div>
-                                </ScrollArea>
-                            </Tabs>
+                                    <ScrollArea className="flex-1 w-full p-4">
+                                        <div className="space-y-4 pb-10">
+                                            <TabsContent value="critical" className="mt-0 space-y-2 data-[state=inactive]:hidden">
+                                                {criticalAlerts.length === 0 && <div className="flex flex-col items-center justify-center h-40 text-zinc-500 gap-2"><CheckCircle2 className="w-8 h-8 opacity-50 text-green-500" /><span className="text-xs">Todo en orden por aquí.</span></div>}
+                                                {criticalAlerts.map(item => {
+                                                    const critLabel = item.importance_level === 'critical' ? 'VITAL' : item.importance_level === 'high' ? 'ALTA' : 'NORM.';
+                                                    const critLabelColor = item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" : item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
+                                                    return (
+                                                        <div key={item.product_id} className="bg-red-900/10 border border-red-500/30 rounded-xl p-3 flex items-center gap-3 relative overflow-hidden">
+                                                            <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black tracking-widest rounded-br-lg", critLabelColor)}>
+                                                                {critLabel}
+                                                            </div>
+                                                            <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                                                            <div className="flex-1 text-center min-w-0 px-2">
+                                                                <div className="font-bold text-[13px] text-red-200 truncate">{item.name}</div>
+                                                                <div className="text-[11px] text-red-400/90 mt-0.5 font-medium">{item.reason}</div>
+                                                            </div>
+                                                            <div className="w-5 h-5 shrink-0" />
+                                                        </div>
+                                                    );
+                                                })}
+                                            </TabsContent>
+                                            <TabsContent value="suggestions" className="mt-0 space-y-2 data-[state=inactive]:hidden">
+                                                {suggestionAlerts.length === 0 && <div className="flex flex-col items-center justify-center h-40 text-zinc-500 gap-2"><span className="text-xs">Sin sugerencias.</span></div>}
+                                                {suggestionAlerts.map(item => {
+                                                    const suggLabel = item.is_ghost ? 'PUNTUAL' :
+                                                        item.importance_level === 'critical' ? 'VITAL' :
+                                                            item.importance_level === 'high' ? 'ALTA' : 'NORM.';
+                                                    const suggLabelColor = item.is_ghost ? "bg-zinc-700/40 text-zinc-500" :
+                                                        item.importance_level === 'critical' ? "bg-red-500/20 text-red-400" :
+                                                            item.importance_level === 'high' ? "bg-orange-500/20 text-orange-400" : "bg-blue-500/20 text-blue-400";
+                                                    const sid = `sugg_${item.product_id}`;
+                                                    const offset = swipeOffsets[sid] || 0;
+                                                    return (
+                                                        <div key={item.product_id} className={cn("rounded-xl border relative overflow-hidden", item.severity === 'expiry' ? "border-purple-500/30" : "border-blue-500/30")}>
+                                                            <div className={cn("absolute inset-0 flex items-center pl-4", offset === 0 ? "invisible" : "visible", offset >= SWIPE_THRESHOLD ? "bg-green-600/25" : "bg-blue-600/15")}>
+                                                                <ShoppingCart className={cn("w-5 h-5 transition-all duration-150", offset >= SWIPE_THRESHOLD ? "text-green-400 scale-125" : "text-blue-400 opacity-60")} />
+                                                            </div>
+                                                            <div
+                                                                className="bg-zinc-900/40 p-2.5 flex items-center gap-3 cursor-grab relative select-none"
+                                                                style={{ transform: `translateX(${offset}px)`, transition: swipingId === sid ? 'none' : 'transform 0.25s ease' }}
+                                                                onTouchStart={(e) => { touchStartX.current[sid] = e.touches[0].clientX; setSwipingId(sid); }}
+                                                                onTouchMove={(e) => {
+                                                                    const d = e.touches[0].clientX - (touchStartX.current[sid] || 0);
+                                                                    if (d > 0) setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) }));
+                                                                }}
+                                                                onTouchEnd={() => {
+                                                                    setSwipingId(null);
+                                                                    if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
+                                                                    setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                }}
+                                                            >
+                                                                <div className={cn("absolute top-0 left-0 px-2 py-0.5 text-[8px] font-black tracking-widest rounded-br-lg", suggLabelColor)}>
+                                                                    {suggLabel}
+                                                                </div>
+                                                                <div className="flex-1 min-w-0 px-2 py-0.5 mt-2">
+                                                                    <div className="font-bold text-[13px] text-zinc-100 truncate">{item.name}</div>
+                                                                    <div className="text-[11px] text-zinc-400 mt-0.5">{item.reason}</div>
+                                                                </div>
+                                                                <div className="shrink-0 flex items-center gap-2">
+                                                                    <div className="font-mono font-bold text-[13px] text-zinc-300 bg-zinc-800/50 px-2 py-1 rounded-md">
+                                                                        {item.total_quantity} <span className="text-[9px] opacity-60">{item.unit}</span>
+                                                                    </div>
+                                                                    <ChevronRight className="w-4 h-4 text-zinc-600" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </TabsContent>
+                                        </div>
+                                    </ScrollArea>
+                                </Tabs>
+                            )}
                         </TabsContent>
-                    </Tabs >
-                </DialogContent >
-            </Dialog >
+                    </Tabs>
+                </DialogContent>
+            </Dialog>
 
             <EditProductDialog product={selectedProduct} isOpen={showEditDialog} onOpenChange={setShowEditDialog} onUpdated={fetchData} />
             {selectedProduct && <AddBatchDialog product={selectedProduct} isOpen={isAddBatchOpen} onOpenChange={setIsAddBatchOpen} onBatchAdded={handleBatchAddedManual} householdId={householdId} />}

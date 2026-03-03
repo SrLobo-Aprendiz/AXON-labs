@@ -4,7 +4,7 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const Select: React.FC<SelectPrimitive.SelectProps> = SelectPrimitive.Root;
+const Select: any = SelectPrimitive.Root;
 
 const SelectGroup = SelectPrimitive.Group;
 
@@ -64,7 +64,7 @@ const SelectContent = React.forwardRef<
     onOpenAutoFocus?: (event: Event) => void;
     onCloseAutoFocus?: (event: Event) => void;
   }
->(({ className, children, position = "popper", ...props }, ref) => (
+>(({ className, children, position = "popper", onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => (
   <SelectPrimitive.Portal>
     <SelectPrimitive.Content
       ref={ref}
@@ -75,6 +75,7 @@ const SelectContent = React.forwardRef<
         className,
       )}
       position={position}
+      onCloseAutoFocus={onCloseAutoFocus}
       {...props}
     >
       <SelectScrollUpButton />
