@@ -80,7 +80,7 @@ export const LocationAutocomplete = ({
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <PopoverTrigger asChild>
         <div className="relative w-full group">
           <Input

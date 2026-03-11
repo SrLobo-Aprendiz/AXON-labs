@@ -89,9 +89,9 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
       
       {!isEditing ? (
         <div className="flex items-center gap-3 w-full min-w-0 overflow-hidden">
-            <div className="flex items-baseline gap-1 shrink-0 w-[55px]">
-                <span className="text-2xl font-bold text-white font-mono">{batch.quantity}</span>
-                <span className="text-xs text-zinc-500">{unit}</span>
+            <div className="flex flex-col justify-center shrink-0 w-16 overflow-hidden">
+                <span className="text-xl font-bold text-white font-mono leading-none truncate">{batch.quantity}</span>
+                <span className="text-[10px] text-zinc-500 truncate mt-1 w-full">{unit}</span>
             </div>
 
             <div className="flex-1 grid gap-1 min-w-0">
@@ -104,7 +104,7 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
                         <CalendarIcon className="w-3 h-3 shrink-0"/>
                         {batch.expiry_date ? format(safeDate(batch.expiry_date)!, 'dd/MM/yy', { locale: es }) : 'Sin fecha'}
                     </div>
-                    {batch.price && (
+                    {!!batch.price && batch.price > 0 && (
                         <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-1.5 rounded shrink-0 min-w-0 truncate">
                             <Euro className="w-3 h-3 shrink-0"/> <span className="truncate">{batch.price}</span>
                         </div>
