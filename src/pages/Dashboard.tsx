@@ -29,18 +29,22 @@ const Dashboard: React.FC = () => {
   const { profile, currentHousehold, logout, isLoading, isAuthenticated } = useAuth();
   const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
+  // MODO DEBUG: Si existe el parámetro, mostramos la pantalla de carga forzada
+  const debugLevel = new URLSearchParams(window.location.search).get('debugLevel');
+
   // Redirect to auth if not authenticated
   React.useEffect(() => {
-    if (!isLoading) {
+    // Si estamos en modo debug, NO redirigimos automáticamente
+    if (!isLoading && !debugLevel) {
       if (!isAuthenticated) {
         navigate('/auth');
       } else if (currentHousehold === null) {
         navigate('/setup');
       }
     }
-  }, [isLoading, isAuthenticated, currentHousehold, navigate]);
+  }, [isLoading, isAuthenticated, currentHousehold, navigate, debugLevel]);
 
-  if (isLoading || (isAuthenticated && currentHousehold === undefined)) {
+  if (isLoading || debugLevel || (isAuthenticated && currentHousehold === undefined)) {
     return <LoadingScreen />;
   }
 

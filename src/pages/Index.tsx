@@ -4,23 +4,24 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { APP_CONFIG } from '@/lib/config';
 import { Users, Shield, Zap } from 'lucide-react';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 const Index = () => {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // MODO DEBUG: Si existe el parámetro, mostramos la pantalla de carga forzada
+  const debugLevel = new URLSearchParams(window.location.search).get('debugLevel');
+
   useEffect(() => {
-    if (!isLoading && user) {
+    // Si estamos en modo debug, NO redirigimos automáticamente para poder ver las animaciones
+    if (!isLoading && user && !debugLevel) {
       navigate('/dashboard');
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, debugLevel]);
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
-      </div>
-    );
+  if (isLoading || debugLevel) {
+    return <LoadingScreen />;
   }
 
   return (

@@ -34,8 +34,12 @@ export const LoadingScreen: React.FC = () => {
         animationClass = 'animate-bounce';
     }
 
+    const [isVisible, setIsVisible] = React.useState(true);
+
+    if (!isVisible && debugLevel) return null;
+
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950">
             <div className="flex flex-col items-center gap-6">
                 <div className={cn("relative w-32 h-32 flex items-center justify-center", glowClass)}>
                     <img
@@ -52,6 +56,15 @@ export const LoadingScreen: React.FC = () => {
                 <p className="text-zinc-500 text-sm font-medium uppercase tracking-widest animate-pulse">
                     Cargando AXON OS
                 </p>
+
+                {debugLevel && (
+                    <button 
+                        onClick={() => setIsVisible(false)}
+                        className="mt-8 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs rounded-full border border-zinc-700 transition-colors"
+                    >
+                        Cerrar Previsualización
+                    </button>
+                )}
             </div>
         </div>
     );
