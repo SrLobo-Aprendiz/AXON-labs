@@ -7,7 +7,9 @@ export const LoadingScreen: React.FC = () => {
 
     // Si no está cargando y no hay perfil, el componente padre probablemente redirigirá,
     // pero por si acaso mostramos el estado genérico.
-    const level = (profile as any)?.level;
+    // PERSISTENCIA: Intentamos recuperar el nivel de localStorage si el profile aún no ha cargado
+    const persistentLevel = localStorage.getItem('axon_user_level');
+    const level = (profile as any)?.level || (persistentLevel ? parseInt(persistentLevel) : null);
 
     let logoSrc = '/axon-logo.png'; // Fallback / Genérico
     let animationClass = 'animate-pulse';

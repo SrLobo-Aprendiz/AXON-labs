@@ -65,6 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     if (userProfile) {
       setProfile(userProfile);
+      
+      // PERSISTENCIA DE IDENTIDAD: Guardar nivel para carga inmediata del logo
+      localStorage.setItem('axon_user_level', userProfile.level?.toString() || '');
+      localStorage.setItem('axon_user_name', userProfile.full_name || '');
 
       const { data: memberData } = await householdService.getMemberData(userId);
 
@@ -222,6 +226,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setProfile(null);
     setCurrentHousehold(null);
     setCurrentRole(null);
+    // Limpiar identidad persistente
+    localStorage.removeItem('axon_user_level');
+    localStorage.removeItem('axon_user_name');
   }, []);
 
   const switchHousehold = useCallback(async (householdId: string) => {
