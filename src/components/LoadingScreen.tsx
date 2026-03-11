@@ -24,10 +24,10 @@ export const LoadingScreen: React.FC = () => {
         logoSrc = '/assets/identity/axon-admin.png';
         animationClass = 'animate-[spin_10s_linear_infinite]';
     } else if (level === 2 || level === 3) {
-        // Teen/Junior: "Electric A" with high-end FX
+        // Teen/Junior: "Electric A" Neon Green Sphere
         logoSrc = '/assets/identity/axon-teen.png';
-        animationClass = 'animate-[pulse_4s_ease-in-out_infinite]';
-        glowClass = 'shadow-[0_0_30px_rgba(59,130,246,0.3)] rounded-full';
+        animationClass = 'animate-[pulse_3s_ease-in-out_infinite]';
+        glowClass = 'shadow-[0_0_40px_rgba(52,211,153,0.4)] rounded-full';
     } else if (level === 1) {
         // Kid: Friendly bounce with grounding shadow
         logoSrc = '/assets/identity/axon-kids-icon.png';
@@ -40,24 +40,31 @@ export const LoadingScreen: React.FC = () => {
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-zinc-950 overflow-hidden">
-            {/* BACKGROUND FX FOR TEEN (Electric) */}
+            {/* BACKGROUND FX FOR TEEN (Electric Green Sphere) */}
             {(level === 2 || level === 3) && (
                 <>
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0%,transparent_70%)]" />
-                    {/* Electrical Arcs */}
-                    <div className="absolute w-64 h-64 border border-blue-500/10 rounded-full animate-[spin_3s_linear_infinite] opacity-20" />
-                    <div className="absolute w-72 h-72 border border-blue-400/5 rounded-full animate-[spin_5s_linear_infinite_reverse] opacity-20" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(52,211,153,0.08)_0%,transparent_70%)]" />
+                    
+                    {/* The Energy Sphere - Multiple contra-rotating rings */}
+                    <div className="absolute w-[300px] h-[300px] rounded-full border border-emerald-500/10 blur-[2px] animate-[spin_4s_linear_infinite]" />
+                    <div className="absolute w-[320px] h-[320px] rounded-full border border-emerald-400/5 animate-[spin_7s_linear_infinite_reverse]" />
+                    
+                    {/* Conic Gradient Rings (The "running" energy) */}
+                    <div className="absolute w-80 h-80 rounded-full opacity-30 animate-[spin_2s_linear_infinite] [background:conic-gradient(from_0deg,transparent_0%,rgba(52,211,153,0.8)_50%,transparent_100%)] [mask-image:radial-gradient(transparent_68%,black_70%)]" />
+                    <div className="absolute w-[340px] h-[340px] rounded-full opacity-20 animate-[spin_3.5s_linear_infinite_reverse] [background:conic-gradient(from_0deg,transparent_0%,rgba(16,185,129,0.8)_40%,transparent_100%)] [mask-image:radial-gradient(transparent_69%,black_71%)]" />
                 </>
             )}
 
             <div className="flex flex-col items-center gap-8 relative z-10">
                 <div className={cn("relative w-32 h-32 flex items-center justify-center transition-all duration-700", glowClass)}>
                     
-                    {/* TEEN FX: Electric Bolts/Flicker */}
+                    {/* TEEN FX: Neon Contour Flicker */}
                     {(level === 2 || level === 3) && (
-                        <div className="absolute inset-0 animate-[pulse_0.1s_infinite] opacity-40">
-                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-8 bg-blue-400 blur-sm rounded-full" />
-                             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-8 bg-blue-400 blur-sm rounded-full" />
+                        <div className="absolute -inset-4 animate-[pulse_0.15s_infinite] opacity-60">
+                             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-10 bg-emerald-400 blur-[3px] rounded-full" />
+                             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-10 bg-emerald-400 blur-[3px] rounded-full" />
+                             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-1.5 bg-emerald-400 blur-[3px] rounded-full" />
+                             <div className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-1.5 bg-emerald-400 blur-[3px] rounded-full" />
                         </div>
                     )}
 
