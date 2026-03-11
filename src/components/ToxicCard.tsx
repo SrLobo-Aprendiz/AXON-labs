@@ -1,34 +1,37 @@
 import React from 'react';
 import { Sword, Skull, Flame } from 'lucide-react';
+import { usePerformanceSettings } from '@/hooks/usePerformanceSettings';
 
 export const ToxicCard = () => {
+  const { useLowPerfUI: isLiteMode } = usePerformanceSettings();
+
   return (
     // CONTENEDOR DE LA CARTA (Estilo "Persiana" / Cyberpunk)
-    <div className="relative w-64 h-96 bg-zinc-900 rounded-xl border border-zinc-700 shadow-2xl overflow-hidden flex flex-col items-center p-4 hover:scale-105 transition-transform duration-300 cursor-pointer group">
-      
+    <div className={`relative w-64 h-96 bg-zinc-900 rounded-xl border ${isLiteMode ? 'border-zinc-500' : 'border-zinc-700 shadow-2xl hover:scale-105 transition-transform duration-300'} overflow-hidden flex flex-col items-center p-4 cursor-pointer group`}>
+
       {/* FONDO DECORATIVO (Patrón sutil) */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-green-900/20 to-transparent opacity-50" />
+      {!isLiteMode && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-green-900/20 to-transparent opacity-50" />}
 
       {/* --- LA ALQUIMIA VISUAL (Icon Composition) --- */}
       <div className="relative w-40 h-40 mt-8 flex items-center justify-center">
-        
+
         {/* Capa 1: El Aura (Fuego Tóxico) - Desenfocado y detrás */}
-        <Flame 
-          size={140} 
-          className="absolute text-green-500 blur-sm opacity-60 animate-pulse group-hover:opacity-100 transition-opacity" 
+        <Flame
+          size={140}
+          className={`absolute text-green-500 ${isLiteMode ? 'opacity-80' : 'blur-sm opacity-60 animate-pulse group-hover:opacity-100'} transition-opacity`}
         />
-        
+
         {/* Capa 2: El Objeto Base (Espada) - Nítido */}
-        <Sword 
-          size={120} 
-          className="relative z-10 text-zinc-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] group-hover:rotate-12 transition-transform duration-500" 
+        <Sword
+          size={120}
+          className="relative z-10 text-zinc-300 drop-shadow-[0_0_10px_rgba(255,255,255,0.3)] group-hover:rotate-12 transition-transform duration-500"
           strokeWidth={1.5}
         />
 
         {/* Capa 3: El Detalle (Calavera) - Pequeño en la empuñadura */}
-        <Skull 
-          size={32} 
-          className="absolute z-20 text-white drop-shadow-md translate-y-8" 
+        <Skull
+          size={32}
+          className="absolute z-20 text-white drop-shadow-md translate-y-8"
         />
       </div>
 

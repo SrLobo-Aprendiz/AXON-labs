@@ -93,3 +93,7 @@ privacidad.
 ## 3. ESTRATEGIA DE ACCESO (BETA)
 - **Código Pionero:** Entrada mediante validación de código (ej: PIONERO2026).
 - **Invitación Líquida:** Vinculación directa a `household_id` vía QR o Link Mágico.
+
+## 4. ESTRATEGIA DE CAPTURA RÁPIDA (QUICK CAPTURE)
+- **Fricción Cero:** Flujo básico de entrada de producto (voz/texto) directo hacia una "Bandeja de entrada" (Inbox).
+- **Mantenimiento Diferido:** Sistema para rellenar y organizar los datos complejos (caducidad, prioridades) a posteriori.

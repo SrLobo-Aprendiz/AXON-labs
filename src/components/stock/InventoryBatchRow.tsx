@@ -84,31 +84,31 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
     <div className="group flex flex-col gap-2 p-3 rounded-lg bg-zinc-900/40 border border-zinc-800 hover:border-zinc-700 transition-all">
       
       {!isEditing ? (
-        <div className="flex items-center gap-3">
-            <div className="flex items-baseline gap-1 min-w-[70px]">
+        <div className="flex items-center gap-3 w-full min-w-0 overflow-hidden">
+            <div className="flex items-baseline gap-1 shrink-0 w-[55px]">
                 <span className="text-2xl font-bold text-white font-mono">{batch.quantity}</span>
                 <span className="text-xs text-zinc-500">{unit}</span>
             </div>
 
-            <div className="flex-1 grid gap-1">
-                <div className="flex items-center gap-2">
+            <div className="flex-1 grid gap-1 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 text-blue-500 shrink-0"/>
                     <span className="text-sm text-zinc-300 font-medium truncate">{batch.location || 'Sin ubicación'}</span>
                 </div>
-                <div className="flex items-center gap-3 text-xs">
-                    <div className={cn("flex items-center gap-1", !batch.expiry_date ? "text-zinc-600" : "text-zinc-400")}>
-                        <CalendarIcon className="w-3 h-3"/>
+                <div className="flex items-center gap-3 text-xs w-full min-w-0 overflow-hidden">
+                    <div className={cn("flex items-center gap-1 shrink-0", !batch.expiry_date ? "text-zinc-600" : "text-zinc-400")}>
+                        <CalendarIcon className="w-3 h-3 shrink-0"/>
                         {batch.expiry_date ? format(safeDate(batch.expiry_date)!, 'dd/MM/yy', { locale: es }) : 'Sin fecha'}
                     </div>
                     {batch.price && (
-                        <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-1.5 rounded">
-                            <Euro className="w-3 h-3"/> {batch.price}
+                        <div className="flex items-center gap-1 text-emerald-500 bg-emerald-500/10 px-1.5 rounded shrink-0 min-w-0 truncate">
+                            <Euro className="w-3 h-3 shrink-0"/> <span className="truncate">{batch.price}</span>
                         </div>
                     )}
                 </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
                 <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-zinc-500 hover:text-white" onClick={() => {
                     setEditQty(batch.quantity.toString());
                     setEditPrice(batch.price?.toString() || '');

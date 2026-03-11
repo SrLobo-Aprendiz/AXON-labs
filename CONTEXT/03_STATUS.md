@@ -84,6 +84,14 @@
 - [ ] **RLS Liquid Trust:** Políticas de Supabase basadas en Capabilities/Levels.
 - [ ] **i18n Engine:** Configurar traducciones para el "Pack Nacional".
 
+### Modelo de Datos: Producto Nuevo/Borrador
+- **Concepto:** `Quick Capture` (Inbox)
+- **Valores por defecto:**
+  - `Cantidad`: 1
+  - `Prioridad`: Normal
+  - `Ubicación`: Inbox
+  - `Caducidad`: Null
+
 ## 📅 PENDIENTE (NEXT)
 - [ ] **Beta Pioneros:** Sistema de validación de códigos `beta_codes`.
 - [ ] **Wishlist:** Lógica para peticiones de compra de Level 1 (Kids).

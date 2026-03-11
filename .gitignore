@@ -34,3 +34,7 @@ Thumbs.db
 .vercel
 .netlify
 coverage/
+
+# Documentación interna y cursos
+CONTEXT/
+ibm introduccion a la ingeniria de software/

@@ -28,19 +28,22 @@ export const LocationAutocomplete = ({
   useEffect(() => { setInputValue(value); }, [value]);
 
   useEffect(() => {
-    if (suggestions) {
-      setLocations(suggestions.length > 0 ? suggestions : DEFAULT_LOCATIONS);
+    // Si pasamos suggestions desde fuera, no hacemos fetch
+    if (suggestions && suggestions.length > 0) {
+      setLocations(suggestions);
+      return; 
     }
-  }, [suggestions]);
 
-  useEffect(() => {
+    let isMounted = true;
     const fetchLocations = async () => {
-      if (!householdId || (suggestions && suggestions.length > 0)) return;
+      if (!householdId) return;
       try {
         const { data } = await supabase.from('inventory_items')
           .select('location')
           .eq('household_id', householdId)
           .not('location', 'is', null);
+
+        if (!isMounted) return;
 
         // Unir y limpiar duplicados (insensible a mayúsculas)
         const rawList = [...DEFAULT_LOCATIONS, ...(data?.map(i => i.location?.trim()) || [])];
@@ -51,10 +54,19 @@ export const LocationAutocomplete = ({
           }
         });
         setLocations(Array.from(uniqueMap.values()).sort());
-      } catch (e) { console.error(e); }
+      } catch (e) { 
+        console.error("Error fetching locations:", e); 
+      }
     };
+    
     fetchLocations();
-  }, [householdId, suggestions]);
+
+    return () => {
+        isMounted = false; // Cleanup para evitar memory leaks si se desmonta rápido
+    };
+  // Se quita 'suggestions' del array de dependencias para evitar bucles infinitos
+  // si suggestions es un array inline (e.g. suggestions={[]})
+  }, [householdId]);
 
   // Filtro visual
   const filteredLocations = locations.filter(loc =>

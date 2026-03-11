@@ -606,7 +606,7 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                             <TabsList className="grid w-full grid-cols-3 bg-zinc-950">
                                 <TabsTrigger value="reception">Recepción {receptionItems.length > 0 && <Badge className="ml-2 bg-blue-600 h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px]">{receptionItems.length}</Badge>}</TabsTrigger>
                                 <TabsTrigger value="pantry">Despensa</TabsTrigger>
-                                <TabsTrigger value="alerts" className="data-[state=active]:text-red-400">Avisos {(criticalAlerts.length + suggestionAlerts.length) > 0 && <Badge className="ml-2 bg-red-600 h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px] animate-pulse">{(criticalAlerts.length + suggestionAlerts.length)}</Badge>}</TabsTrigger>
+                                <TabsTrigger value="alerts" className="data-[state=active]:text-red-400">Avisos {(criticalAlerts.length + suggestionAlerts.length) > 0 && <Badge className={`ml-2 h-5 w-5 p-0 flex items-center justify-center rounded-full text-[10px] ${useLowPerfUI ? 'bg-red-500 border border-red-400' : 'bg-red-600 animate-pulse'}`}>{(criticalAlerts.length + suggestionAlerts.length)}</Badge>}</TabsTrigger>
                             </TabsList>
                         </div>
 
@@ -905,6 +905,30 @@ export const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, househo
                                                                 onTouchEnd={() => {
                                                                     setSwipingId(null);
                                                                     if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) handleAddToShoppingList(item);
+                                                                    setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                }}
+                                                                onMouseDown={(e) => {
+                                                                    touchStartX.current[sid] = e.clientX;
+                                                                    setSwipingId(sid);
+                                                                }}
+                                                                onMouseMove={(e) => {
+                                                                    if (swipingId !== sid) return;
+                                                                    const d = e.clientX - (touchStartX.current[sid] || 0);
+                                                                    if (d > 5) {
+                                                                        setSwipeOffsets(prev => ({ ...prev, [sid]: Math.min(d, 120) }));
+                                                                    }
+                                                                }}
+                                                                onMouseUp={() => {
+                                                                    if (swipingId !== sid) return;
+                                                                    setSwipingId(null);
+                                                                    if ((swipeOffsets[sid] || 0) >= SWIPE_THRESHOLD) {
+                                                                        handleAddToShoppingList(item);
+                                                                    }
+                                                                    setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
+                                                                }}
+                                                                onMouseLeave={() => {
+                                                                    if (swipingId !== sid) return;
+                                                                    setSwipingId(null);
                                                                     setSwipeOffsets(prev => ({ ...prev, [sid]: 0 }));
                                                                 }}
                                                             >
