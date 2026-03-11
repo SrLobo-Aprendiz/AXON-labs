@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, avatar_url, household_ids, ui_mode, updated_at, current_household_id, is_superadmin, level, display_name, username, preferences')
+      .select('id, email, full_name, avatar_url, household_ids, ui_mode, updated_at, current_household_id, is_superadmin, level, display_name, username')
       .eq('id', userId)
       .single();
 
@@ -381,8 +381,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error: null };
   }, [user, profile, fetchHousehold]);
 
-  const prefs = profile?.preferences as { lowPerfUI?: boolean } | null;
-  const useLowPerfUI = prefs?.lowPerfUI ?? false;
+  const useLowPerfUI = profile?.ui_mode === 'simple';
 
   const value: AuthContextType = {
     user,
