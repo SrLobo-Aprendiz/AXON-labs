@@ -28,8 +28,8 @@ export const LocationAutocomplete = ({
   useEffect(() => { setInputValue(value); }, [value]);
 
   useEffect(() => {
-    // Si pasamos suggestions desde fuera, no hacemos fetch
-    if (suggestions && suggestions.length > 0) {
+    // Si pasamos suggestions desde fuera, no hacemos fetch, incluso si está vacío
+    if (suggestions !== undefined) {
       setLocations(suggestions);
       return; 
     }

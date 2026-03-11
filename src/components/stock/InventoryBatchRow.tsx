@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { LocationAutocomplete } from '@/components/LocationAutocomplete';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const safeDate = (d: string | null | undefined) => {
     if (!d) return undefined;
@@ -39,6 +40,7 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
   onMove,
   locationSuggestions,
 }) => {
+  const { useLowPerfUI } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editQty, setEditQty] = useState(batch.quantity.toString());
   const [editPrice, setEditPrice] = useState(batch.price?.toString() || '');
@@ -114,7 +116,7 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
                 <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-zinc-500 hover:text-white" onClick={() => {
                     setEditQty(batch.quantity.toString());
                     setEditPrice(batch.price?.toString() || '');
-                    setEditLocation(''); // <--- AQUÍ ESTÁ EL CAMBIO: INICIA VACÍO
+                    setEditLocation(batch.location || ''); 
                     setEditDate(safeDate(batch.expiry_date));
                     setIsEditing(true);
                 }}>
@@ -144,7 +146,7 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
                                 </Label>
                             </div>
                             {splitDateMode && (
-                                <div className="grid grid-cols-2 gap-2 animate-in slide-in-from-top-2">
+                                <div className={cn("grid grid-cols-2 gap-2", !useLowPerfUI && "animate-in slide-in-from-top-2")}>
                                     <div className="space-y-1">
                                         <span className="text-[9px] text-blue-400 font-bold uppercase">Origen</span>
                                         <Popover>
@@ -176,7 +178,7 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
             </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 animate-in fade-in bg-zinc-950/50 p-2 rounded border border-blue-500/30 w-full min-w-0 overflow-hidden">
+        <div className={cn("flex flex-col gap-3 bg-zinc-950/50 p-2 rounded border border-blue-500/30 w-full min-w-0", !useLowPerfUI && "animate-in fade-in")}>
             <div className="flex gap-2 w-full min-w-0">
                 <div className="w-20 shrink-0">
                     <Label className="text-[10px] text-zinc-500 font-bold">Cant.</Label>
@@ -198,9 +200,9 @@ export const InventoryBatchRow: React.FC<InventoryBatchRowProps> = ({
                     <Label className="text-[10px] text-zinc-500 font-bold">Caducidad</Label>
                     <Popover modal={false}>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full h-8 justify-start text-left font-normal bg-zinc-900 border-zinc-700 text-xs", !editDate && "text-zinc-500")}>
-                                <CalendarIcon className="mr-2 h-3 w-3" />
-                                {editDate ? format(editDate, 'dd/MM/yy') : <span>Sin fecha</span>}
+                            <Button variant="outline" className={cn("w-full h-8 justify-start text-left font-normal bg-zinc-900 border-zinc-700 text-xs px-2", !editDate && "text-zinc-500")}>
+                                <CalendarIcon className="mr-2 h-3 w-3 shrink-0" />
+                                <span className="truncate">{editDate ? format(editDate, 'dd/MM/yy') : "Fecha"}</span>
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0 bg-zinc-950 border-zinc-800 text-white"><Calendar mode="single" selected={editDate} onSelect={setEditDate} initialFocus className="bg-zinc-950 text-white"/></PopoverContent>

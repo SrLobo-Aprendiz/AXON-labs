@@ -18,6 +18,7 @@ interface AuthContextType {
   createNewHousehold: (name: string) => Promise<Household | null>;
   joinHouseholdByToken: (token: string) => Promise<{ error: string | null }>;
   refetchProfile: () => Promise<void>;
+  useLowPerfUI: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,7 +47,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, full_name, avatar_url, household_ids, ui_mode, updated_at, current_household_id, is_superadmin, level, display_name, username')
+      .select('id, email, full_name, avatar_url, household_ids, ui_mode, updated_at, current_household_id, is_superadmin, level, display_name, username, preferences')
       .eq('id', userId)
       .single();
 
@@ -380,6 +381,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return { error: null };
   }, [user, profile, fetchHousehold]);
 
+  const prefs = profile?.preferences as { lowPerfUI?: boolean } | null;
+  const useLowPerfUI = prefs?.lowPerfUI ?? false;
+
   const value: AuthContextType = {
     user,
     profile,
@@ -395,6 +399,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     createNewHousehold,
     joinHouseholdByToken,
     refetchProfile,
+    useLowPerfUI,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
